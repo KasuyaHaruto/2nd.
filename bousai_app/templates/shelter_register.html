@@ -2,21 +2,14 @@
 
 {% block content %}
 <h2>避難所登録</h2>
-<p>新しい避難所情報を登録します。</p>
-
-<!-- 成功・エラーメッセージ表示 -->
-{% if success %}
-  <p>{{ message }}</p>
-{% endif %}
-
-{% if error %}
-  <p>{{ message }}</p>
-{% endif %}
+<p>{{ message }}</p>
 
 <form method="POST">
   <p>
-    <label for="name">避難所名（必須）</label><br>
-    <input type="text" id="name" name="name">
+    <label for="name">避難所名（必須）</label>
+  </p>
+  <p>
+    <input type="text" id="name" name="name" value="{{ request.form.get('name', '') if request.method == 'POST' else '' }}">
   </p>
   <p><button type="submit">登録</button></p>
 </form>

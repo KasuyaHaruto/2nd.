@@ -1,72 +1,104 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- 避難所マップ -->
-<h2>避難所マップ</h2>
-<div id="shelterMap" style="height: 300px;"></div>
+<section class="section-card">
+  <div class="card-title">
+    <span class="icon">📍</span>
+    <h2>避難所マップ</h2>
+  </div>
+  <div id="shelterMap" aria-label="避難所マップ"></div>
+</section>
 
-<!-- 気象警報・注意報 -->
-<h2>青森市 気象警報・注意報</h2>
-<p>10分おきに自動更新されます。</p>
-<div id="weatherContent">
-  <p>読み込み中...</p>
-</div>
+<section class="alert-card">
+  <div class="alert-header">
+    <div class="title-wrap">
+      <span class="icon">⛅</span>
+      <h2>青森市 気象警報・注意報</h2>
+    </div>
+    <button class="refresh-badge" type="button" id="refreshWeatherBtn">↻ 10分おき自動更新</button>
+  </div>
 
-<!-- Leaflet の読み込み -->
+  <div id="weatherContent" class="alert-body">
+    <div class="area-row"><span class="dot"></span><span>青森市</span></div>
+    <div class="status-box"><span class="check">✓</span><span>読み込み中...</span></div>
+    <ul class="detail-list">
+      <li><span class="bullet"></span><span>データ取得中です</span></li>
+    </ul>
+  </div>
+</section>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 地図の初期化（藤沢市周辺を中心に設定）
     const map = L.map('shelterMap').setView([35.3390, 139.4903], 12);
 
-    // OpenStreetMapタイルを追加
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // 気象警報・注意報の自動更新機能
-    function updateWeatherWarnings() {
-        fetch('/api/weather_warnings')
-            .then(response => response.json())
-            .then(data => {
-                console.log('気象情報を更新しました:', data);
-                updateWeatherContent(data);
-            })
-            .catch(error => {
-                console.error('気象情報の更新に失敗しました:', error);
-            });
-    }
-
     function updateWeatherContent(data) {
         const weatherContent = document.getElementById('weatherContent');
 
+        if (!weatherContent) return;
+
         if (data.error) {
-            weatherContent.innerHTML = '<p>気象情報の取得に失敗しました</p>';
+            weatherContent.innerHTML = `
+                <div class="area-row"><span class="dot"></span><span>${data.area_name || '青森市'}</span></div>
+                <div class="status-box"><span class="check">⚠</span><span>気象情報の取得に失敗しました</span></div>
+                <ul class="detail-list">
+                  <li><span class="bullet"></span><span>最終確認: ${data.last_fetch_time || '更新中...'}</span></li>
+                </ul>
+            `;
             return;
         }
 
         let warningsHtml = '';
         if (data.warnings && data.warnings.length > 0) {
-            warningsHtml = '<ul>';
+            warningsHtml = '<ul class="detail-list">';
             data.warnings.forEach(warning => {
-                warningsHtml += `<li>${warning.name}（${warning.status}）</li>`;
+                warningsHtml += `<li><span class="bullet"></span><span>${warning.name}（${warning.status}）</span></li>`;
             });
             warningsHtml += '</ul>';
         } else {
-            warningsHtml = '<p>現在、警報・注意報は発表されていません</p>';
+            warningsHtml = `
+                <div class="status-box"><span class="check">✓</span><span>現在、警報・注意報は発表されていません</span></div>
+            `;
         }
 
         weatherContent.innerHTML = `
-            <p>対象地域: ${data.area_name || '青森市'}</p>
+            <div class="area-row"><span class="dot"></span><span>${data.area_name || '青森市'}</span></div>
             ${warningsHtml}
-            <p>最終確認: <span id="lastFetchTime">${data.last_fetch_time || '更新中...'}</span></p>
-            <p>気象庁最終発表: ${data.report_time || '不明'}</p>
+            <ul class="detail-list">
+                <li><span class="bullet"></span><span>データ取得時刻: ${data.last_fetch_time || '更新中...'}</span></li>
+                <li><span class="bullet"></span><span>気象庁最終発表: ${data.report_time || '不明'}</span></li>
+            </ul>
         `;
     }
 
-    // 初回表示＋10分（600,000ミリ秒）おきに自動更新
+    function updateWeatherWarnings() {
+        fetch('/api/weather_warnings')
+            .then(response => response.json())
+            .then(data => {
+                updateWeatherContent(data);
+            })
+            .catch(() => {
+                updateWeatherContent({
+                    area_name: '青森市',
+                    warnings: [],
+                    last_fetch_time: new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+                    report_time: '不明',
+                    error: true
+                });
+            });
+    }
+
+    const refreshButton = document.getElementById('refreshWeatherBtn');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', updateWeatherWarnings);
+    }
+
     updateWeatherWarnings();
     setInterval(updateWeatherWarnings, 600000);
 });
