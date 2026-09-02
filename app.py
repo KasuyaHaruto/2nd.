@@ -331,11 +331,87 @@ def all_shelters():
 
 
 # 指示ボード：住民向けの指示を一覧で確認する
-@app.route('/board')
+@app.route('/board', methods=['GET', 'POST'])
 @login_required
 def board():
-    resident_instructions = [i for i in instructions if i.get('target') == '住民']
-    return render_template('board.html', instructions=resident_instructions)
+    success_message = None
+
+    if request.method == 'POST':
+        targets = request.form.getlist('targets') or [request.form.get('targets', '全住民')]
+        channels = request.form.getlist('channels') or [request.form.get('channels', 'アプリ')]
+        urgency = request.form.get('urgency', 'お知らせ')
+        message = (request.form.get('message', '') or '').strip()
+
+        if message:
+            target_map = {
+                '全住民': '全住民',
+                '北部のみ': '北部',
+                '南部のみ': '南側',
+                '庁内・消防団': '庁内'
+            }
+            target_value = next(
+                (target_map.get(target, target) for target in targets if target in target_map),
+                '全住民'
+            )
+            urgency_map = {
+                '即時避難': '🔴即時避難',
+                '警戒・準備': '🟡警戒・準備',
+                'お知らせ': '🔵お知らせ'
+            }
+            new_id = max((int(i.get('id', 0)) for i in instructions), default=0) + 1
+            now = datetime.now(JST).strftime('%Y/%m/%d %H:%M')
+            instructions.insert(0, {
+                'id': new_id,
+                'target': target_value,
+                'content': message,
+                'shelter': '',
+                'status': urgency_map.get(urgency, urgency),
+                'created_at': now,
+                'updated_at': now,
+                'channels': ', '.join(channels),
+                'urgency': urgency,
+            })
+            save_instructions()
+            success_message = '発信が登録されました。'
+
+    default_history = [
+        {
+            'created_at': '2026/09/02 10:15',
+            'status': '【🔴即時避難】',
+            'content': '南側地区における土砂災害警戒について',
+            'target': '南側',
+            'image_url': 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=80'
+        },
+        {
+            'created_at': '2026/09/01 18:00',
+            'status': '【🔵お知らせ】',
+            'content': '明日の大雨に備えた確認のお願い',
+            'target': '全住民',
+            'image_url': ''
+        },
+        {
+            'created_at': '2026/08/30 09:00',
+            'status': '【🟡警戒・準備】',
+            'content': '第1避難所の定員到達に関するお知らせ',
+            'target': '全住民',
+            'image_url': 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=900&q=80'
+        }
+    ]
+
+    history_entries = list(default_history)
+    if request.method == 'POST' and success_message:
+        history_entries = [
+            {
+                'created_at': datetime.now(JST).strftime('%Y/%m/%d %H:%M'),
+                'status': urgency_map.get(urgency, '【🔵お知らせ】'),
+                'content': message,
+                'target': target_value,
+                'image_url': '',
+            },
+            *history_entries,
+        ]
+
+    return render_template('board.html', instructions=history_entries, message=success_message)
 
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')

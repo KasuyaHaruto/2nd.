@@ -23,6 +23,40 @@ class ShelterRegisterPageTest(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('避難所を登録しました。', html)
 
+    def test_board_page_displays_instruction_board_controls(self):
+        response = self.client.get('/board')
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('📢新規発信', html)
+        self.assertIn('[送信先]', html)
+        self.assertIn('[発信手段]', html)
+        self.assertIn('即時避難', html)
+        self.assertIn('プレビュー確認する', html)
+        self.assertIn('キーワードで過去の指示を検索', html)
+        self.assertIn('2026/09/02 10:15', html)
+
+    def test_board_post_saves_message_to_history(self):
+        response = self.client.post('/board', data={
+            'targets': '南部のみ',
+            'channels': 'アプリ',
+            'urgency': '即時避難',
+            'message': '南側地区における土砂災害警戒について'
+        })
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('南側地区における土砂災害警戒について', html)
+        self.assertIn('発信が登録されました', html)
+
+    def test_board_page_has_upload_and_filter_controls(self):
+        response = self.client.get('/board')
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('type="file"', html)
+        self.assertIn('data-history-item', html)
+        self.assertIn('history-search', html)
+        self.assertIn('historyPreview', html)
+        self.assertIn('data-image-url', html)
+
     def test_parse_area_warnings_uses_aomori_city_code(self):
         from app import parse_area_warnings
 
