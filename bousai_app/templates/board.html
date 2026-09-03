@@ -492,14 +492,6 @@
     </div>
   {% endif %}
 
-  <div class="status-wrap">
-    <div class="status-text">
-      <strong>通信状態: 良好</strong><br>
-      最終更新: <span id="lastUpdatedText">11:22</span>
-    </div>
-    <button id="reloadButton" class="reload-button" type="button" aria-label="更新">↻</button>
-  </div>
-
   <div class="new-message-row">
     <button id="newMessageButton" class="primary-btn new-message-btn" type="button">📢新規発信</button>
   </div>
@@ -623,8 +615,6 @@
 </div>
 
 <script>
-  const lastUpdatedText = document.getElementById('lastUpdatedText');
-  const reloadButton = document.getElementById('reloadButton');
   const uploadTrigger = document.getElementById('uploadTrigger');
   const imageUpload = document.getElementById('imageUpload');
   const uploadFileName = document.getElementById('uploadFileName');
@@ -648,17 +638,6 @@
   const messageForm = document.getElementById('messageForm');
   const newMessageButton = document.getElementById('newMessageButton');
   const allHistory = {{ all_history|tojson }};
-
-  function updateLastUpdated() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    lastUpdatedText.textContent = `${hours}:${minutes}`;
-  }
-
-  if (reloadButton) {
-    reloadButton.addEventListener('click', updateLastUpdated);
-  }
 
   if (newMessageButton && messageForm) {
     newMessageButton.addEventListener('click', () => {

@@ -43,7 +43,7 @@
     <fieldset class="register-field">
       <legend class="register-label">避難所情報</legend>
       <div class="check-grid">
-        {% for value, label in [('pet_allowed', 'ペット可'), ('locker', 'ロッカー'), ('climate_control', '冷暖房機'), ('infection_control', '感染症対策装備')] %}
+        {% for value, label in [('pet_allowed', 'ペット可'), ('locker', 'ロッカー'), ('barrier_free', 'バリアフリー'), ('climate_control', '冷暖房機器'), ('infection_control', '感染症対策設備'), ('english_support', '英語対応可')] %}
           <label class="check-item"><input type="checkbox" name="facilities" value="{{ value }}" {% if value in form_values.facilities|default([]) %}checked{% endif %}>{{ label }}</label>
         {% endfor %}
       </div>

@@ -1,25 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="home-grid">
+<div class="home-column">
 <section class="section-card">
   <div class="card-title">
     <span class="icon">📍</span>
-    <h2>避難所マップ</h2>
+    <h2 data-i18n="shelterMap">避難所マップ</h2>
   </div>
   <div id="shelterMap" aria-label="避難所マップ"></div>
 </section>
+</div>
 
+<div class="home-column">
 <section class="alert-card">
   <div class="alert-header">
     <div class="title-wrap">
       <span class="icon">⛅</span>
-      <h2>青森市 気象警報・注意報</h2>
+      <h2><span data-i18n="weather">気象情報</span>（青森市）</h2>
     </div>
-    <button class="refresh-badge" type="button" id="refreshWeatherBtn">↻ 10分おき自動更新</button>
+    <button class="refresh-badge" type="button" id="refreshWeatherBtn">↻ <span data-i18n="refresh">10分おき自動更新</span></button>
   </div>
 
   <div id="weatherContent" class="alert-body">
-    <div class="area-row"><span class="dot"></span><span>青森市</span></div>
+    <div class="area-row"><span class="dot"></span><span data-i18n="targetArea">対象地域</span>：青森市</div>
     <div class="status-box"><span class="check">✓</span><span>読み込み中...</span></div>
     <ul class="detail-list">
       <li><span class="bullet"></span><span>データ取得中です</span></li>
@@ -27,45 +31,97 @@
   </div>
 </section>
 
-{% if resident_notices %}
-<section class="section-card" aria-label="住民向け指示・発信">
-  <div class="card-title">
-    <span class="icon">📢</span>
-    <h2>住民向け指示・発信</h2>
-  </div>
-  <ul class="detail-list">
-    {% for notice in resident_notices[:5] %}
-      <li>
-        <span class="bullet"></span>
-        <span>{{ notice.created_at }} {{ notice.status }} {{ notice.content }}</span>
-      </li>
+<section class="contact-card">
+  <h2 data-i18n="contact">お問い合わせ</h2>
+  <p data-i18n="contactOrg">青森市災害対策本部</p>
+  <p><span data-i18n="contactPhone">電話</span>：○○○-○○○○-○○○○</p>
+  <p><span data-i18n="contactAddress">住所</span>：○○○○○○</p>
+  <a class="contact-action" href="{{ url_for('contact') }}" data-i18n="emailForm">メール送信フォーム</a>
+</section>
+</div>
+
+<div class="home-column">
+<section class="news-card" aria-label="新着情報">
+  <h2 data-i18n="news">新着情報</h2>
+  <ul class="news-list">
+    {% for notice in resident_notices[:3] %}
+    <li class="news-item">
+      <span class="news-content">{{ notice.content }}</span>
+      {% if notice.shelter %}<span class="news-shelter"><span data-i18n="shelterDestination">避難先</span>：{{ notice.shelter }}</span>{% endif %}
+    </li>
+    {% else %}
+    <li><p class="news-empty" data-i18n="noNews">新着情報はありません</p></li>
     {% endfor %}
   </ul>
+  <p class="news-empty" style="margin-top: 16px;"><span data-i18n="lastUpdate">最終更新</span>: <span id="latestUpdate">--:--</span></p>
+  {% if session.logged_in %}
+  <div class="admin-contact-list" aria-label="送信されたお問い合わせ">
+    <h3>送信されたお問い合わせ</h3>
+    <form class="admin-contact-search" method="get" action="{{ url_for('index') }}">
+      <input type="search" name="contact_query" value="{{ contact_query }}" placeholder="内容・場所・状況で検索" aria-label="問い合わせを検索">
+      <button type="submit">検索</button>
+    </form>
+    {% for message in admin_contact_messages %}
+    {% set message_index = message[0] %}
+    {% set message = message[1] %}
+    <article class="admin-contact-item">
+      <p><span class="admin-contact-label">危険の内容：</span>{{ message.danger }}</p>
+      <p><span class="admin-contact-label">発生場所：</span>{{ message.location }}</p>
+      <p><span class="admin-contact-label">発生日時・状況：</span>{{ message.situation }}</p>
+      <p class="admin-contact-time">受信日時：{{ message.created_at }}</p>
+      <form class="admin-contact-actions" method="post" action="{{ url_for('update_contact_status', message_index=message_index) }}">
+        <input type="hidden" name="contact_query" value="{{ contact_query }}">
+        <label for="contact-status-{{ message_index }}">対応状況</label>
+        <select id="contact-status-{{ message_index }}" name="status">
+          {% for status in ['未対応', '対応中', '対応済み'] %}
+          <option value="{{ status }}" {% if message.status|default('未対応') == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+        <button class="admin-contact-action" type="submit">状態を更新</button>
+      </form>
+      <form class="admin-contact-actions" method="post" action="{{ url_for('delete_contact_message', message_index=message_index) }}" onsubmit="return confirm('この問い合わせを削除しますか？');">
+        <input type="hidden" name="contact_query" value="{{ contact_query }}">
+        <button class="admin-contact-action delete" type="submit">削除</button>
+      </form>
+    </article>
+    {% else %}
+    <p class="news-empty">送信されたお問い合わせはありません。</p>
+    {% endfor %}
+  </div>
+  {% endif %}
 </section>
-{% endif %}
+</div>
+</div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const map = L.map('shelterMap').setView([35.3390, 139.4903], 12);
-
+  try {
+    const map = L.map('shelterMap').setView([40.8244, 140.7400], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+  } catch (error) {
+    const mapContainer = document.getElementById('shelterMap');
+    if (mapContainer) mapContainer.textContent = '地図を表示できません';
+  }
 
     function updateWeatherContent(data) {
         const weatherContent = document.getElementById('weatherContent');
 
         if (!weatherContent) return;
 
+        const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        const language = document.documentElement.lang === 'en' ? 'en' : document.documentElement.lang === 'zh' ? 'zh' : 'ja';
+        const labels = translations[language];
         if (data.error) {
             weatherContent.innerHTML = `
-                <div class="area-row"><span class="dot"></span><span>${data.area_name || '青森市'}</span></div>
-                <div class="status-box"><span class="check">⚠</span><span>気象情報の取得に失敗しました</span></div>
+                <div class="area-row"><span class="dot"></span><span>${escapeHtml(data.area_name || '青森市')}</span></div>
+                <div class="status-box"><span class="check">⚠</span><span>${labels.weatherError}</span></div>
                 <ul class="detail-list">
-                  <li><span class="bullet"></span><span>最終確認: ${data.last_fetch_time || '更新中...'}</span></li>
+                  <li><span class="bullet"></span><span>${labels.lastCheck}: ${escapeHtml(data.last_fetch_time || '更新中...')}</span></li>
                 </ul>
             `;
             return;
@@ -80,16 +136,16 @@ document.addEventListener('DOMContentLoaded', function() {
             warningsHtml += '</ul>';
         } else {
             warningsHtml = `
-                <div class="status-box"><span class="check">✓</span><span>現在、警報・注意報は発表されていません</span></div>
+                <div class="status-box"><span class="check">✓</span><span>${labels.noWarnings}</span></div>
             `;
         }
 
         weatherContent.innerHTML = `
-            <div class="area-row"><span class="dot"></span><span>${data.area_name || '青森市'}</span></div>
+            <div class="area-row"><span class="dot"></span><span>${escapeHtml(data.area_name || '青森市')}</span></div>
             ${warningsHtml}
             <ul class="detail-list">
-                <li><span class="bullet"></span><span>データ取得時刻: ${data.last_fetch_time || '更新中...'}</span></li>
-                <li><span class="bullet"></span><span>気象庁最終発表: ${data.report_time || '不明'}</span></li>
+                <li><span class="bullet"></span><span>${labels.lastCheck}: ${escapeHtml(data.last_fetch_time || '更新中...')}</span></li>
+                <li><span class="bullet"></span><span>${labels.jmaLastReport}: ${escapeHtml(data.report_time || '不明')}</span></li>
             </ul>
         `;
     }
@@ -99,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 updateWeatherContent(data);
+                document.getElementById('latestUpdate').textContent = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
             })
             .catch(() => {
                 updateWeatherContent({
@@ -108,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     report_time: '不明',
                     error: true
                 });
+                document.getElementById('latestUpdate').textContent = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
             });
     }
 
@@ -118,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateWeatherWarnings();
     setInterval(updateWeatherWarnings, 600000);
+    window.addEventListener('languagechanged', updateWeatherWarnings);
 });
 </script>
 {% endblock %}

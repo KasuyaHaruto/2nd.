@@ -47,9 +47,9 @@
 			</div>
 		</fieldset>
 		<fieldset class="search-field">
-			<legend class="search-label">設備</legend>
+			<legend class="search-label">避難所情報</legend>
 			<div class="check-grid">
-				{% set facility_options = [('pet_allowed', 'ペット可'), ('barrier_free', 'バリアフリー'), ('available_only', '空きありのみ表示'), ('climate_control', '冷暖房機器'), ('infection_control', '感染症対策設備'), ('english_support', '英語対応可')] %}
+				{% set facility_options = [('pet_allowed', 'ペット可'), ('locker', 'ロッカー'), ('barrier_free', 'バリアフリー'), ('available_only', '空きありのみ表示'), ('climate_control', '冷暖房機器'), ('infection_control', '感染症対策設備'), ('english_support', '英語対応可')] %}
 				{% for value, label in facility_options %}
 					<label class="check-item"><input type="checkbox" name="facilities" value="{{ value }}" {% if value in selected_facilities %}checked{% endif %}>{{ label }}</label>
 				{% endfor %}

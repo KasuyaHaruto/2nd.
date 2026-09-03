@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}お問い合わせ | 防災アプリ{% endblock %}
+
+{% block content %}
+<section class="section-card contact-form-card">
+  <div class="card-title">
+    <span class="icon" aria-hidden="true">✉</span>
+    <h2>お問い合わせ</h2>
+  </div>
+  <p>災害発生時の状況を青森市災害対策本部へ送信できます。</p>
+
+  {% if sent %}
+    <p class="form-message success" role="status">お問い合わせを送信しました。ご連絡ありがとうございます。</p>
+  {% endif %}
+  {% if errors %}
+    <ul class="form-errors" role="alert">
+      {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" class="contact-form">
+    <div class="register-field">
+      <label class="register-label" for="danger">どのような危険があったのか</label>
+      <textarea class="register-input" id="danger" name="danger" rows="4" required>{{ form_values.danger }}</textarea>
+    </div>
+    <div class="register-field">
+      <label class="register-label" for="location">発生場所</label>
+      <input class="register-input" type="text" id="location" name="location" value="{{ form_values.location }}" placeholder="例：青森市○○地区" required>
+    </div>
+    <div class="register-field">
+      <label class="register-label" for="situation">発生日時・状況</label>
+      <textarea class="register-input" id="situation" name="situation" rows="4" placeholder="発生した日時や周囲の状況を入力してください" required>{{ form_values.situation }}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="register-button" type="submit">送信</button>
+      <a href="{{ url_for('index') }}">ホームへ戻る</a>
+    </div>
+  </form>
+</section>
+<style>
+  .contact-form-card { max-width: 760px; margin: 0 auto; }
+  .contact-form { display: grid; gap: 18px; }
+</style>
+{% endblock %}

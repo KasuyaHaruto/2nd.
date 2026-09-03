@@ -87,6 +87,7 @@ WARNING_CODES = {
 # サンプルデータの読み込み
 DATA_FILE = os.path.join(APP_DIR, 'data', 'shelters.json')
 INSTRUCTIONS_FILE = os.path.join(APP_DIR, 'data', 'instructions.json')
+CONTACT_MESSAGES_FILE = os.path.join(APP_DIR, 'data', 'contact_messages.json')
 UPLOAD_FOLDER = os.path.join(APP_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -101,6 +102,7 @@ def load_json(path, default):
 
 shelters = load_json(DATA_FILE, [])
 instructions = load_json(INSTRUCTIONS_FILE, [])
+contact_messages = load_json(CONTACT_MESSAGES_FILE, [])
 
 def save_instructions():
     """指示ボードのデータをファイルに保存する"""
@@ -109,6 +111,16 @@ def save_instructions():
             json.dump(instructions, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+def save_contact_messages():
+    """問い合わせ内容をファイルに保存する"""
+    try:
+        with open(CONTACT_MESSAGES_FILE, 'w', encoding='utf-8') as f:
+            json.dump(contact_messages, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False
 
 
 def save_uploaded_image(file_storage):
@@ -176,7 +188,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in'):
             # 現在のURLをnextパラメータとしてログイン画面にリダイレクト
-            return redirect(url_for('login', next=request.url))
+            return redirect(url_for('login', next=request.full_path))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -296,12 +308,17 @@ def filter_shelters(district=None, name=None, areas=None, facilities=None):
             continue
 
         shelter_facilities = shelter.get('facilities')
-        if not isinstance(shelter_facilities, dict):
-            shelter_facilities = {}
+        if isinstance(shelter_facilities, list):
+            shelter_facilities = set(shelter_facilities)
+            has_facility = lambda facility: facility in shelter_facilities
+        elif isinstance(shelter_facilities, dict):
+            has_facility = lambda facility: shelter_facilities.get(facility) is True
+        else:
+            has_facility = lambda facility: False
         if not all(
             _has_available_space(shelter)
             if facility == 'available_only'
-            else shelter_facilities.get(facility) is True
+            else has_facility(facility)
             for facility in facilities
         ):
             continue
@@ -405,7 +422,93 @@ def index():
         i for i in instructions
         if i.get('target') in ('住民', '全住民')
     ]
-    return render_template('index.html', resident_notices=resident_notices)
+    contact_query = request.args.get('contact_query', '').strip()
+    admin_contact_messages = []
+    if session.get('logged_in'):
+        admin_contact_messages = [
+            (index, message) for index, message in enumerate(contact_messages)
+            if not contact_query or contact_query.casefold() in ' '.join(
+                str(message.get(field, ''))
+                for field in ('danger', 'location', 'situation', 'status')
+            ).casefold()
+        ][:10]
+    return render_template(
+        'index.html',
+        resident_notices=resident_notices,
+        admin_contact_messages=admin_contact_messages,
+        contact_query=contact_query,
+    )
+
+
+@app.route('/admin/contact/<int:message_index>/status', methods=['POST'])
+@login_required
+def update_contact_status(message_index):
+    if not 0 <= message_index < len(contact_messages):
+        return redirect(url_for('index'))
+    status = request.form.get('status', '')
+    if status in ('未対応', '対応中', '対応済み'):
+        contact_messages[message_index]['status'] = status
+        save_contact_messages()
+    return redirect(url_for('index', contact_query=request.form.get('contact_query', '')))
+
+
+@app.route('/admin/contact/<int:message_index>/delete', methods=['POST'])
+@login_required
+def delete_contact_message(message_index):
+    if 0 <= message_index < len(contact_messages):
+        contact_messages.pop(message_index)
+        save_contact_messages()
+    return redirect(url_for('index', contact_query=request.form.get('contact_query', '')))
+
+
+# 災害時の問い合わせフォーム
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    form_values = {
+        'danger': '',
+        'location': '',
+        'situation': '',
+    }
+    errors = []
+    sent = request.args.get('sent') == '1'
+
+    if request.method == 'POST':
+        form_values = {
+            'danger': request.form.get('danger', '').strip(),
+            'location': request.form.get('location', '').strip(),
+            'situation': request.form.get('situation', '').strip(),
+        }
+        labels = {
+            'danger': '危険の内容',
+            'location': '発生場所',
+            'situation': '発生日時・状況',
+        }
+        errors = [
+            f'{labels[key]}を入力してください。'
+            for key, value in form_values.items()
+            if not value
+        ]
+        if not errors:
+            contact_messages.insert(0, {
+                'id': uuid.uuid4().hex,
+                'danger': form_values['danger'],
+                'location': form_values['location'],
+                'situation': form_values['situation'],
+                'status': '未対応',
+                'created_at': datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z'),
+            })
+            if not save_contact_messages():
+                contact_messages.pop(0)
+                errors.append('問い合わせ内容の送信に失敗しました。時間をおいて再試行してください。')
+            else:
+                return redirect(url_for('contact', sent='1'))
+
+    return render_template(
+        'contact.html',
+        form_values=form_values,
+        errors=errors,
+        sent=sent,
+    )
 
 # ログインページ
 @app.route('/login', methods=['GET', 'POST'])

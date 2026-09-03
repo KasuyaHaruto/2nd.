@@ -21,6 +21,10 @@
   .status-badge { flex: 0 0 auto; padding: 4px 8px; border-radius: 999px; font-size: .82rem; font-weight: 700; background: var(--success-soft); color: #167747; }
   .status-badge.full { background: #dfe3e6; color: #5b646b; }
   .shelter-meta { margin: 8px 0; color: var(--text-muted); font-size: .92rem; }
+  .shelter-details { display: grid; gap: 6px; margin: 12px 0; padding: 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .shelter-detail-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; margin: 0; color: var(--text-muted); font-size: .9rem; }
+  .shelter-detail-label { color: var(--brand-blue-dark); font-weight: 700; }
+  .shelter-image { display: block; width: min(100%, 240px); max-height: 160px; margin: 12px 0; border: 1px solid var(--line); border-radius: 6px; object-fit: cover; }
   .route-button { padding: 8px 12px; border: 0; border-radius: 6px; background: var(--brand-blue); color: #fff; font: inherit; cursor: pointer; }
   .route-button:focus-visible, .voice-button:focus-visible { outline: 3px solid #f5c542; outline-offset: 2px; }
   .route-button:disabled { background: #a8b0b6; color: #eef0f1; cursor: not-allowed; }
@@ -43,6 +47,8 @@
       <p class="route-status" id="routeStatus" aria-live="polite">地図を読み込んでいます。</p>
     </div>
     <div class="results-list" aria-label="距離の近い順の避難所一覧">
+      {% set facility_names = {'pet_allowed': 'ペット可', 'locker': 'ロッカー', 'barrier_free': 'バリアフリー', 'climate_control': '冷暖房機器', 'infection_control': '感染症対策設備', 'english_support': '英語対応可'} %}
+      {% set damage_names = {'electricity': '電気', 'food': '食料', 'gas': 'ガス'} %}
       {% if results %}
         {% for shelter in results %}
           <article class="shelter-item{% if shelter.status == 'full' %} full{% endif %}">
@@ -52,6 +58,14 @@
             </div>
             <div class="shelter-meta">現在地から {{ '%.1f'|format(shelter.distance_km) }} km{% if shelter.district %} / {{ shelter.district }}{% endif %}</div>
             {% if shelter.address %}<div class="shelter-meta">住所: {{ shelter.address }}</div>{% endif %}
+            <div class="shelter-details">
+              <p class="shelter-detail-row"><span class="shelter-detail-label">避難所情報</span><span>{% if shelter.facilities %}{% for facility in shelter.facilities %}{{ facility_names.get(facility, facility) }}{% if not loop.last %}、{% endif %}{% endfor %}{% else %}登録なし{% endif %}</span></p>
+              <p class="shelter-detail-row"><span class="shelter-detail-label">被害状況</span><span>{% if shelter.damages %}{% for damage in shelter.damages %}{{ damage_names.get(damage, damage) }}{% if not loop.last %}、{% endif %}{% endfor %}{% else %}登録なし{% endif %}</span></p>
+              <p class="shelter-detail-row"><span class="shelter-detail-label">混雑状況</span><span>{{ shelter.congestion|default('未登録', true) }}</span></p>
+            </div>
+            {% if shelter.image %}
+              <img class="shelter-image" src="{{ shelter.image }}" alt="{{ shelter.name }}の避難所画像" loading="lazy">
+            {% endif %}
             {% if shelter.status == 'full' %}
               <button class="route-button" type="button" disabled>満員・タップ不可</button>
             {% else %}
