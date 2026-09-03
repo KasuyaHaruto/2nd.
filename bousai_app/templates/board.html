@@ -468,7 +468,7 @@
     <button class="primary-btn new-message-btn" type="button">📢新規発信</button>
   </div>
 
-  <form method="post" action="/board" aria-label="発信フォーム">
+  <form method="post" action="/board" enctype="multipart/form-data" aria-label="発信フォーム">
     <section class="board-form">
       <div class="field-row">
         <div class="field-label">[送信先]</div>
@@ -504,7 +504,7 @@
           <div class="field-label">[メッセージ内容]</div>
           <input class="message-input" type="text" name="message" placeholder="(自由入力)" aria-label="メッセージ内容">
           <div class="field-label" style="min-width: auto;">[画像添付]</div>
-          <input id="imageUpload" type="file" accept="image/*" hidden>
+          <input id="imageUpload" name="image" type="file" accept="image/*" hidden>
           <button class="upload-btn" type="button" id="uploadTrigger">アップロード</button>
           <span id="uploadFileName" style="font-size: 13px; color: #475569;">未選択</span>
         </div>

@@ -1,3 +1,4 @@
+import io
 import unittest
 
 from app import app
@@ -56,6 +57,23 @@ class ShelterRegisterPageTest(unittest.TestCase):
         self.assertIn('history-search', html)
         self.assertIn('historyPreview', html)
         self.assertIn('data-image-url', html)
+
+    def test_board_post_saves_uploaded_image_and_shows_preview_url(self):
+        response = self.client.post(
+            '/board',
+            data={
+                'targets': '全住民',
+                'channels': 'アプリ',
+                'urgency': 'お知らせ',
+                'message': '画像付きの発信テスト',
+                'image': (io.BytesIO(b'fake-image-data'), 'sample.png')
+            },
+            content_type='multipart/form-data'
+        )
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('画像付きの発信テスト', html)
+        self.assertIn('/static/uploads/', html)
 
     def test_parse_area_warnings_uses_aomori_city_code(self):
         from app import parse_area_warnings

@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from urllib.parse import urlparse, urljoin
 from functools import wraps
+from werkzeug.utils import secure_filename
 import json
 import os
 import urllib.request
@@ -83,6 +84,9 @@ WARNING_CODES = {
 # サンプルデータの読み込み
 DATA_FILE = os.path.join(APP_DIR, 'data', 'shelters.json')
 INSTRUCTIONS_FILE = os.path.join(APP_DIR, 'data', 'instructions.json')
+UPLOAD_FOLDER = os.path.join(APP_DIR, 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 def load_json(path, default):
     """JSONファイルを読み込む（存在しない・壊れている場合は default を返す）"""
@@ -102,6 +106,24 @@ def save_instructions():
             json.dump(instructions, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+def save_uploaded_image(file_storage):
+    """アップロードされた画像を static/uploads に保存し、URLを返す"""
+    if not file_storage or not file_storage.filename:
+        return ''
+
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+    ext = os.path.splitext(file_storage.filename)[1].lower()
+    if ext not in allowed_extensions:
+        return ''
+
+    filename = secure_filename(file_storage.filename)
+    timestamp = datetime.now(JST).strftime('%Y%m%d%H%M%S')
+    unique_name = f"{timestamp}_{filename}"
+    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    file_storage.save(save_path)
+    return url_for('static', filename=f'uploads/{unique_name}')
 # ────────────────────────────────
 
 # ────────────────────────────────
@@ -341,6 +363,8 @@ def board():
         channels = request.form.getlist('channels') or [request.form.get('channels', 'アプリ')]
         urgency = request.form.get('urgency', 'お知らせ')
         message = (request.form.get('message', '') or '').strip()
+        uploaded_image = request.files.get('image')
+        image_url = save_uploaded_image(uploaded_image)
 
         if message:
             target_map = {
@@ -370,6 +394,7 @@ def board():
                 'updated_at': now,
                 'channels': ', '.join(channels),
                 'urgency': urgency,
+                'image_url': image_url,
             })
             save_instructions()
             success_message = '発信が登録されました。'
@@ -406,7 +431,7 @@ def board():
                 'status': urgency_map.get(urgency, '【🔵お知らせ】'),
                 'content': message,
                 'target': target_value,
-                'image_url': '',
+                'image_url': image_url,
             },
             *history_entries,
         ]
