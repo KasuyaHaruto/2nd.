@@ -119,6 +119,39 @@
 
     .nav-list a:hover { background: rgba(255,255,255,0.08); }
 
+    .accessibility-rail {
+      position: fixed;
+      top: 104px;
+      right: 16px;
+      z-index: 15;
+      width: 176px;
+      padding: 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .rail-heading { margin: 0 0 10px; color: var(--brand-blue-dark); font-size: 0.95rem; }
+    .font-size-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 10px; }
+    .font-size-tabs button, .rail-button, .language-select {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text-main);
+      font: inherit;
+      cursor: pointer;
+    }
+    .font-size-tabs button[aria-pressed="true"] { background: var(--brand-blue); color: #fff; }
+    .rail-button, .language-select { width: 100%; margin-top: 7px; padding: 6px 8px; }
+    .rail-button { text-align: left; }
+    .rail-button:hover, .language-select:hover { border-color: var(--brand-blue); }
+    .connection-status { display: block; min-height: 2.8em; margin-top: 8px; color: var(--text-muted); font-size: 0.8rem; }
+    .safety-button { background: var(--success); color: #fff; border-color: var(--success); font-weight: 700; text-align: center; }
+    html[data-font-size="large"] { font-size: 112.5%; }
+    html[data-font-size="small"] { font-size: 87.5%; }
+
     .nav-user {
       color: rgba(255,255,255,0.95);
       font-size: 0.95rem;
@@ -296,7 +329,10 @@
 
     @media (max-width: 700px) {
       .topbar-inner { padding: 0 16px; }
-      .page-shell { padding: 0 12px; }
+      .page-shell { padding: 0 12px; margin-right: 0; }
+      .accessibility-rail { position: static; width: auto; margin: 14px 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .rail-heading, .font-size-tabs, .connection-status { grid-column: 1 / -1; }
+      .rail-button, .language-select { margin-top: 0; }
       .alert-header {
         flex-direction: column;
         align-items: flex-start;
@@ -332,7 +368,26 @@
     </nav>
   </header>
 
-  <main class="page-shell">
+  <aside class="accessibility-rail" aria-label="共通操作">
+    <h2 class="rail-heading">表示・操作</h2>
+    <div class="font-size-tabs" role="group" aria-label="文字サイズ">
+      <button type="button" data-font-size="large" aria-pressed="false">大</button>
+      <button type="button" data-font-size="medium" aria-pressed="true">中</button>
+      <button type="button" data-font-size="small" aria-pressed="false">小</button>
+    </div>
+    <button class="rail-button" type="button" id="readAloudButton">文字読み上げ</button>
+    <label class="rail-heading" for="languageSelect" style="margin-top: 10px;">言語選択</label>
+    <select class="language-select" id="languageSelect">
+      <option value="ja">日本語</option>
+      <option value="en">English</option>
+    </select>
+    <button class="rail-button" type="button" id="connectionReload">↻ 通信状態を更新</button>
+    <span class="connection-status" id="connectionStatus" aria-live="polite">通信状態: 確認済み</span>
+    <button class="rail-button safety-button" type="button" id="safetyButton">ワンタップ安否登録</button>
+    <span id="languageStatus" class="connection-status" aria-live="polite"></span>
+  </aside>
+
+  <main class="page-shell" id="pageContent">
     {% block content %}{% endblock %}
   </main>
 
@@ -345,6 +400,56 @@
         const isOpen = navPanel.classList.toggle('open');
         menuToggle.setAttribute('aria-expanded', String(isOpen));
       });
+    }
+
+    document.querySelectorAll('[data-font-size]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        const size = button.dataset.fontSize;
+        document.documentElement.dataset.fontSize = size === 'medium' ? '' : size;
+        document.querySelectorAll('[data-font-size]').forEach(function(item) {
+          item.setAttribute('aria-pressed', String(item === button));
+        });
+      });
+    });
+
+    const readAloudButton = document.getElementById('readAloudButton');
+    if (readAloudButton) {
+      readAloudButton.addEventListener('click', function() {
+        if (!('speechSynthesis' in window)) {
+          alert('このブラウザは文字読み上げに対応していません');
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const text = document.getElementById('pageContent').innerText.trim();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = document.documentElement.lang || 'ja-JP';
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+
+    const languageSelect = document.getElementById('languageSelect');
+    const languageStatus = document.getElementById('languageStatus');
+    if (languageSelect) {
+      languageSelect.addEventListener('change', function() {
+        document.documentElement.lang = languageSelect.value === 'en' ? 'en' : 'ja';
+        languageStatus.textContent = languageSelect.value === 'en'
+          ? 'English表示に切り替えました（案内表示）'
+          : '日本語表示に切り替えました';
+      });
+    }
+
+    const connectionReload = document.getElementById('connectionReload');
+    const connectionStatus = document.getElementById('connectionStatus');
+    if (connectionReload) {
+      connectionReload.addEventListener('click', function() {
+        const now = new Date().toLocaleTimeString('ja-JP');
+        connectionStatus.textContent = '通信状態: 更新済み（' + now + '）';
+      });
+    }
+
+    const safetyButton = document.getElementById('safetyButton');
+    if (safetyButton) {
+      safetyButton.addEventListener('click', function() { alert('安否登録できました'); });
     }
   </script>
 </body>

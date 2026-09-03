@@ -1,5 +1,440 @@
 [
   {
+    "id": 62,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:31",
+    "updated_at": "2026/09/03 11:31",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903113155_sample.png"
+  },
+  {
+    "id": 61,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:31",
+    "updated_at": "2026/09/03 11:31",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 60,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:26",
+    "updated_at": "2026/09/03 11:26",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903112642_sample.png"
+  },
+  {
+    "id": 59,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:26",
+    "updated_at": "2026/09/03 11:26",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 58,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:26",
+    "updated_at": "2026/09/03 11:26",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903112624_sample.png"
+  },
+  {
+    "id": 57,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:26",
+    "updated_at": "2026/09/03 11:26",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 56,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:25",
+    "updated_at": "2026/09/03 11:25",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903112552_sample.png"
+  },
+  {
+    "id": 55,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:25",
+    "updated_at": "2026/09/03 11:25",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 54,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:25",
+    "updated_at": "2026/09/03 11:25",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903112536_sample.png"
+  },
+  {
+    "id": 53,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:25",
+    "updated_at": "2026/09/03 11:25",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 52,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:18",
+    "updated_at": "2026/09/03 11:18",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903111853_sample.png"
+  },
+  {
+    "id": 51,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:18",
+    "updated_at": "2026/09/03 11:18",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 50,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:18",
+    "updated_at": "2026/09/03 11:18",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903111827_sample.png"
+  },
+  {
+    "id": 49,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:18",
+    "updated_at": "2026/09/03 11:18",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 48,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:15",
+    "updated_at": "2026/09/03 11:15",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903111508_sample.png"
+  },
+  {
+    "id": 47,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:15",
+    "updated_at": "2026/09/03 11:15",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 46,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903110946_sample.png"
+  },
+  {
+    "id": 45,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 44,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903110935_sample.png"
+  },
+  {
+    "id": 43,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 42,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903110928_sample.png"
+  },
+  {
+    "id": 41,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 40,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903110912_sample.png"
+  },
+  {
+    "id": 39,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:09",
+    "updated_at": "2026/09/03 11:09",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 38,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:03",
+    "updated_at": "2026/09/03 11:03",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903110325_sample.png"
+  },
+  {
+    "id": 37,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:03",
+    "updated_at": "2026/09/03 11:03",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 36,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 11:03",
+    "updated_at": "2026/09/03 11:03",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903110308_sample.png"
+  },
+  {
+    "id": 35,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 11:03",
+    "updated_at": "2026/09/03 11:03",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
+    "id": 34,
+    "target": "全住民",
+    "content": "森林火災発生。付近の住民は避難してください。",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 10:54",
+    "updated_at": "2026/09/03 10:54",
+    "channels": [
+      "アプリ",
+      "屋外スピーカー"
+    ],
+    "urgency": "即時避難",
+    "image_url": "/static/uploads/20260903105444_jpg"
+  },
+  {
+    "id": 33,
+    "target": "全住民",
+    "content": "画像付きの発信テスト",
+    "shelter": "",
+    "status": "🔵お知らせ",
+    "created_at": "2026/09/03 10:52",
+    "updated_at": "2026/09/03 10:52",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "お知らせ",
+    "image_url": "/static/uploads/20260903105201_sample.png"
+  },
+  {
+    "id": 32,
+    "target": "南側",
+    "content": "南側地区における土砂災害警戒について",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 10:52",
+    "updated_at": "2026/09/03 10:52",
+    "channels": [
+      "アプリ"
+    ],
+    "urgency": "即時避難",
+    "image_url": ""
+  },
+  {
     "id": 31,
     "target": "全住民",
     "content": "森林火災発生。付近の住民は避難してください。",

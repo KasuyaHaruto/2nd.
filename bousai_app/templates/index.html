@@ -27,6 +27,23 @@
   </div>
 </section>
 
+{% if resident_notices %}
+<section class="section-card" aria-label="住民向け指示・発信">
+  <div class="card-title">
+    <span class="icon">📢</span>
+    <h2>住民向け指示・発信</h2>
+  </div>
+  <ul class="detail-list">
+    {% for notice in resident_notices[:5] %}
+      <li>
+        <span class="bullet"></span>
+        <span>{{ notice.created_at }} {{ notice.status }} {{ notice.content }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 

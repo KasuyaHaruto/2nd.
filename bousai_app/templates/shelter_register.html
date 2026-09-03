@@ -1,16 +1,97 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h2>避難所登録</h2>
-<p>{{ message }}</p>
+{% block title %}避難所登録 | 防災アプリ{% endblock %}
 
-<form method="POST">
-  <p>
-    <label for="name">避難所名（必須）</label>
-  </p>
-  <p>
-    <input type="text" id="name" name="name" value="{{ request.form.get('name', '') if request.method == 'POST' else '' }}">
-  </p>
-  <p><button type="submit">登録</button></p>
-</form>
+{% block content %}
+<style>
+  .register-card { max-width: 760px; margin: 0 auto; }
+  .register-form { display: grid; gap: 18px; }
+  .register-field { display: grid; gap: 7px; }
+  .register-label { color: var(--brand-blue-dark); font-weight: 700; }
+  .required { color: #b33636; font-size: .85em; }
+  .register-input, .register-select { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; font: inherit; background: #fff; }
+  .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 9px; }
+  .check-item { display: flex; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+  .form-message { padding: 12px 14px; border-radius: 8px; background: var(--brand-blue-light); color: var(--brand-blue-dark); }
+  .form-message.success { background: var(--success-soft); color: #176d42; }
+  .form-errors { margin: 0; padding: 10px 10px 10px 28px; border: 1px solid #e2a4a4; border-radius: 7px; background: #fff2f2; color: #8b2525; }
+  .form-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .register-button { padding: 11px 22px; border: 0; border-radius: 7px; background: var(--brand-blue); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .preview-image { display: none; max-width: 240px; max-height: 160px; border: 1px solid var(--line); border-radius: 7px; object-fit: contain; }
+  .file-note { color: var(--text-muted); font-size: .9rem; }
+</style>
+
+<section class="section-card register-card">
+  <div class="card-title"><span class="icon" aria-hidden="true">＋</span><h2>避難所登録</h2></div>
+  <p class="form-message{% if success %} success{% endif %}" role="status">{{ message or '登録済みの避難所情報を確認・追加できます。' }}<br>新しい避難所情報を登録します。避難所名を入力してください。</p>
+
+  {% if errors %}
+    <ul class="form-errors" role="alert">
+      {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <form class="register-form" method="post" enctype="multipart/form-data">
+    <div class="register-field">
+      <label class="register-label" for="name">避難所名（必須）</label>
+      <input class="register-input" type="text" id="name" name="name" value="{{ form_values.name|default('') }}" required>
+    </div>
+    <div class="register-field">
+      <label class="register-label" for="address">避難所住所（必須）</label>
+      <input class="register-input" type="text" id="address" name="address" value="{{ form_values.address|default('') }}" placeholder="例: 藤沢市朝日町1-1" required>
+    </div>
+    <fieldset class="register-field">
+      <legend class="register-label">避難所情報</legend>
+      <div class="check-grid">
+        {% for value, label in [('pet_allowed', 'ペット可'), ('locker', 'ロッカー'), ('climate_control', '冷暖房機'), ('infection_control', '感染症対策装備')] %}
+          <label class="check-item"><input type="checkbox" name="facilities" value="{{ value }}" {% if value in form_values.facilities|default([]) %}checked{% endif %}>{{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <fieldset class="register-field">
+      <legend class="register-label">被害状況</legend>
+      <div class="check-grid">
+        {% for value, label in [('electricity', '電気'), ('food', '食料'), ('gas', 'ガス')] %}
+          <label class="check-item"><input type="checkbox" name="damages" value="{{ value }}" {% if value in form_values.damages|default([]) %}checked{% endif %}>{{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <div class="register-field">
+      <label class="register-label" for="congestion">混雑状況 <span class="required">必須</span></label>
+      <select class="register-select" id="congestion" name="congestion" required>
+        <option value="">未選択</option>
+        {% for value in ['空いている', '通常', '混雑', '満員'] %}
+          <option value="{{ value }}" {% if form_values.congestion|default('') == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="register-field">
+      <label class="register-label" for="image">避難所画像（任意）</label>
+      <input class="register-input" type="file" id="image" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
+      <span class="file-note" id="fileName">画像を選択してください。</span>
+      <img class="preview-image" id="imagePreview" alt="選択した避難所画像のプレビュー">
+    </div>
+    <div class="form-actions">
+      <button class="register-button" type="submit">登録</button>
+      <a href="{{ url_for('shelter_search') }}">避難所検索へ</a>
+    </div>
+  </form>
+</section>
+
+<script>
+  const imageInput = document.getElementById('image');
+  const imagePreview = document.getElementById('imagePreview');
+  const fileName = document.getElementById('fileName');
+  if (imageInput) {
+    imageInput.addEventListener('change', () => {
+      const file = imageInput.files && imageInput.files[0];
+      if (!file) { fileName.textContent = '画像を選択してください。'; imagePreview.style.display = 'none'; return; }
+      fileName.textContent = file.name;
+      if (file.type.startsWith('image/')) {
+        imagePreview.src = URL.createObjectURL(file);
+        imagePreview.style.display = 'block';
+      }
+    });
+  }
+</script>
 {% endblock %}

@@ -1,15 +1,23 @@
 [
   {
     "id": 1,
-    "name": "御所見小学校"
+    "name": "テスト避難所"
   },
   {
     "id": 2,
-    "name": "片瀬小学校"
+    "name": "あああ"
+  },
+  {
+    "id": 3,
+    "name": "テスト避難所"
+  },
+  {
+    "id": 4,
+    "name": "テスト避難所"
   },
   {
     "id": 5,
-    "name": "鵠洋小学校"
+    "name": "テスト避難所"
   },
   {
     "id": 6,
@@ -17,11 +25,11 @@
   },
   {
     "id": 7,
-    "name": "あああ"
+    "name": "テスト避難所"
   },
   {
     "id": 8,
-    "name": "NTT"
+    "name": "テスト避難所"
   },
   {
     "id": 9,
@@ -29,90 +37,78 @@
   },
   {
     "id": 10,
-    "name": "テスト避難所"
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "image": "",
+    "created_at": "2026-09-03T11:25:36+0900",
+    "updated_at": "2026-09-03T11:25:36+0900"
   },
   {
     "id": 11,
-    "name": "テスト避難所"
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T11:25:52+0900",
+    "updated_at": "2026-09-03T11:25:52+0900"
   },
   {
     "id": 12,
-    "name": "テスト避難所"
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T11:26:24+0900",
+    "updated_at": "2026-09-03T11:26:24+0900"
   },
   {
     "id": 13,
-    "name": "テスト避難所"
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T11:26:42+0900",
+    "updated_at": "2026-09-03T11:26:42+0900"
   },
   {
     "id": 14,
-    "name": "テスト避難所"
+    "name": "NTTデータ関西",
+    "address": "大阪府大阪市北区堂島3-1-21",
+    "facilities": [
+      "locker",
+      "climate_control"
+    ],
+    "damages": [
+      "electricity"
+    ],
+    "congestion": "混雑",
+    "status": "available",
+    "image": "/static/uploads/shelter_30e7aace8bf5446b8d562d1e5604895f.png",
+    "created_at": "2026-09-03T11:29:45+0900",
+    "updated_at": "2026-09-03T11:29:45+0900"
   },
   {
     "id": 15,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 16,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 17,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 18,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 19,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 20,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 21,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 22,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 23,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 24,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 25,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 26,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 27,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 28,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 29,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 30,
-    "name": "テスト避難所"
-  },
-  {
-    "id": 31,
-    "name": "テスト避難所"
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T11:31:55+0900",
+    "updated_at": "2026-09-03T11:31:55+0900"
   }
 ]

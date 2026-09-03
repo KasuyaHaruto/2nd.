@@ -1,6 +1,11 @@
 import io
+import json
+import os
+import tempfile
 import unittest
+from unittest.mock import patch
 
+import app as app_module
 from app import app
 
 
@@ -19,10 +24,65 @@ class ShelterRegisterPageTest(unittest.TestCase):
         self.assertIn('避難所名（必須）', html)
 
     def test_post_registers_shelter_and_shows_success_message(self):
-        response = self.client.post('/shelter_register', data={'name': 'テスト避難所'})
+        response = self.client.post('/shelter_register', data={
+            'name': 'テスト避難所',
+            'address': '藤沢市朝日町1-1',
+            'congestion': '通常',
+        }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn('避難所を登録しました。', html)
+
+    def test_registration_requires_address_and_congestion(self):
+        response = self.client.post('/shelter_register', data={'name': '入力不足'})
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('避難所住所を入力してください。', html)
+        self.assertIn('混雑状況を選択してください。', html)
+
+    def test_registration_rejects_non_image_upload(self):
+        response = self.client.post('/shelter_register', data={
+            'name': 'ファイル検証施設',
+            'address': '藤沢市中央2-2',
+            'congestion': '通常',
+            'image': (io.BytesIO(b'not-an-image'), 'notes.txt'),
+        }, content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('画像ファイル（PNG、JPG、GIF、WEBP）のみ登録できます。', response.get_data(as_text=True))
+
+    def test_registration_persists_all_values_and_image(self):
+        with tempfile.TemporaryDirectory() as directory:
+            data_file = os.path.join(directory, 'shelters.json')
+            upload_folder = os.path.join(directory, 'uploads')
+            os.makedirs(upload_folder)
+            shelters = []
+            with patch.object(app_module, 'shelters', shelters), \
+                    patch.object(app_module, 'DATA_FILE', data_file), \
+                    patch.object(app_module, 'UPLOAD_FOLDER', upload_folder):
+                response = self.client.post('/shelter_register', data={
+                    'name': '  新しい避難所  ',
+                    'address': '  藤沢市中央1-1  ',
+                    'facilities': ['pet_allowed', 'locker'],
+                    'damages': ['electricity', 'food'],
+                    'congestion': '空いている',
+                    'image': (io.BytesIO(b'fake-png'), 'shelter.png'),
+                }, content_type='multipart/form-data', follow_redirects=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('避難所を登録しました。', response.get_data(as_text=True))
+                with open(data_file, encoding='utf-8') as file:
+                    saved = json.load(file)
+                self.assertEqual(saved[0]['name'], '新しい避難所')
+                self.assertEqual(saved[0]['address'], '藤沢市中央1-1')
+                self.assertEqual(saved[0]['facilities'], ['pet_allowed', 'locker'])
+                self.assertEqual(saved[0]['damages'], ['electricity', 'food'])
+                self.assertTrue(saved[0]['image'].startswith('/static/uploads/'))
+                self.assertEqual(len(os.listdir(upload_folder)), 1)
+
+    def test_registration_requires_login(self):
+        client = app.test_client()
+        response = client.get('/shelter_register')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login?next=', response.headers['Location'])
 
     def test_board_page_displays_instruction_board_controls(self):
         response = self.client.get('/board')

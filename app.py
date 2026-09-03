@@ -5,6 +5,8 @@ from werkzeug.utils import secure_filename
 import json
 import os
 import urllib.request
+import math
+import uuid
 from datetime import datetime, timedelta, timezone
 
 # app.py はプロジェクト直下に置く。
@@ -38,6 +40,7 @@ WARNING_URL = (
 )
 
 JST = timezone(timedelta(hours=9))
+DEFAULT_LOCATION = (35.3390, 139.4903)
 
 # 警報・注意報のコード一覧
 WARNING_CODES = {
@@ -124,6 +127,39 @@ def save_uploaded_image(file_storage):
     save_path = os.path.join(UPLOAD_FOLDER, unique_name)
     file_storage.save(save_path)
     return url_for('static', filename=f'uploads/{unique_name}')
+
+
+def save_shelter_image(file_storage):
+    """登録画面用に画像形式を検証し、一意なファイル名で保存する"""
+    if not file_storage or not file_storage.filename:
+        return '', None
+
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+    extension = os.path.splitext(file_storage.filename)[1].lower()
+    content_type = (file_storage.content_type or '').lower()
+    if extension not in allowed_extensions or not content_type.startswith('image/'):
+        return None, '画像ファイル（PNG、JPG、GIF、WEBP）のみ登録できます。'
+
+    if not secure_filename(file_storage.filename):
+        return None, '画像ファイル名を処理できませんでした。'
+    unique_name = f"shelter_{uuid.uuid4().hex}{extension}"
+    save_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    try:
+        file_storage.save(save_path)
+    except Exception:
+        return None, '画像の保存に失敗しました。登録内容は保存されていません。'
+    return url_for('static', filename=f'uploads/{unique_name}'), save_path
+
+
+def shelter_form_values():
+    """登録フォームの再表示用にPOST値を取得する"""
+    return {
+        'name': request.form.get('name', ''),
+        'address': request.form.get('address', ''),
+        'facilities': request.form.getlist('facilities'),
+        'damages': request.form.getlist('damages'),
+        'congestion': request.form.get('congestion', ''),
+    }
 # ────────────────────────────────
 
 # ────────────────────────────────
@@ -162,9 +198,115 @@ def format_report_time(iso_str):
         return iso_str
 
 
-def filter_shelters(district=None):
-    """district 指定があれば一致する避難所のみ、なければ全件を返す"""
-    return [s for s in shelters if not district or s.get('district') == district]
+FACILITY_LABELS = {
+    'pet_allowed': 'ペット可',
+    'barrier_free': 'バリアフリー',
+    'climate_control': '冷暖房機器',
+    'infection_control': '感染症対策設備',
+    'english_support': '英語対応可',
+}
+
+def _clean_query_values(values):
+    """GETパラメータの空白を除去し、空値を除外する"""
+    return [value.strip() for value in values if isinstance(value, str) and value.strip()]
+
+
+def _has_available_space(shelter):
+    """定員情報が正しい数値で、空きがある場合だけTrueを返す"""
+    facilities = shelter.get('facilities')
+    if not isinstance(facilities, dict):
+        facilities = {}
+
+    capacity = facilities.get('capacity')
+    occupancy = facilities.get('current_occupancy')
+    valid_number = lambda value: isinstance(value, (int, float)) and not isinstance(value, bool)
+    return (
+        valid_number(capacity)
+        and valid_number(occupancy)
+        and capacity > 0
+        and occupancy < capacity
+    )
+
+
+def _shelter_status(shelter):
+    """明示された状態、または定員から表示用の満空状態を求める"""
+    if shelter.get('status') in ('available', 'full'):
+        return shelter['status']
+    facilities = shelter.get('facilities')
+    if isinstance(facilities, dict):
+        capacity = facilities.get('capacity')
+        occupancy = facilities.get('current_occupancy')
+        if (isinstance(capacity, (int, float)) and not isinstance(capacity, bool)
+                and isinstance(occupancy, (int, float)) and not isinstance(occupancy, bool)
+                and capacity > 0 and occupancy >= capacity):
+            return 'full'
+    return 'available'
+
+
+def _valid_coordinate(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _distance_km(origin, destination):
+    """2点間の直線距離をkmで計算する"""
+    latitude1, longitude1 = map(math.radians, origin)
+    latitude2, longitude2 = map(math.radians, destination)
+    delta_latitude = latitude2 - latitude1
+    delta_longitude = longitude2 - longitude1
+    haversine = (math.sin(delta_latitude / 2) ** 2
+                 + math.cos(latitude1) * math.cos(latitude2)
+                 * math.sin(delta_longitude / 2) ** 2)
+    return 6371 * 2 * math.asin(math.sqrt(haversine))
+
+
+def prepare_shelter_results(results):
+    """検索結果に座標・状態・距離を補完し、近い順に返す"""
+    prepared = []
+    for index, shelter in enumerate(results):
+        item = dict(shelter)
+        latitude = shelter.get('latitude')
+        longitude = shelter.get('longitude')
+        if not (_valid_coordinate(latitude) and _valid_coordinate(longitude)):
+            offset = (index + 1) * 0.004
+            latitude = DEFAULT_LOCATION[0] + offset
+            longitude = DEFAULT_LOCATION[1] + offset * 0.7
+        item['latitude'] = latitude
+        item['longitude'] = longitude
+        item['status'] = _shelter_status(shelter)
+        item['distance_km'] = round(_distance_km(DEFAULT_LOCATION, (latitude, longitude)), 1)
+        prepared.append(item)
+    return sorted(prepared, key=lambda shelter: shelter['distance_km'])
+
+
+def filter_shelters(district=None, name=None, areas=None, facilities=None):
+    """複数の検索条件を、カテゴリ間AND・カテゴリ内仕様で適用する"""
+    name = (name or '').strip().casefold()
+    district = (district or '').strip().casefold()
+    areas = set(_clean_query_values(areas or []))
+    facilities = set(_clean_query_values(facilities or []))
+    filtered = []
+    for shelter in shelters:
+        shelter_name = str(shelter.get('name', '')).casefold()
+        shelter_district = str(shelter.get('district', '')).casefold()
+        if name and name not in shelter_name:
+            continue
+        if district and district not in shelter_district:
+            continue
+        if areas and not any(area.casefold() in shelter_district for area in areas):
+            continue
+
+        shelter_facilities = shelter.get('facilities')
+        if not isinstance(shelter_facilities, dict):
+            shelter_facilities = {}
+        if not all(
+            _has_available_space(shelter)
+            if facility == 'available_only'
+            else shelter_facilities.get(facility) is True
+            for facility in facilities
+        ):
+            continue
+        filtered.append(shelter)
+    return filtered
 
 
 def parse_area_warnings(warning_data):
@@ -259,18 +401,21 @@ def get_weather_warnings():
 # トップページ：templates/index.html を返す（住民向け指示も表示する）
 @app.route('/')
 def index():
-    resident_notices = [i for i in instructions if i.get('target') == '住民']
+    resident_notices = [
+        i for i in instructions
+        if i.get('target') in ('住民', '全住民')
+    ]
     return render_template('index.html', resident_notices=resident_notices)
 
 # ログインページ
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # リダイレクト先を取得（デフォルトは避難所登録画面）
+    # リダイレクト先を取得（指定がなければホーム）
     next_url = request.args.get('next') or request.form.get('next')
 
     # 安全でないURLの場合はデフォルトページにリダイレクト
     if not next_url or not is_safe_url(next_url):
-        next_url = url_for('shelter_register')
+        next_url = url_for('index')
 
     if request.method == 'POST':
         password = request.form.get('password', '').strip()
@@ -304,52 +449,101 @@ def logout():
 @app.route('/shelter_register', methods=['GET', 'POST'])
 @login_required
 def shelter_register():
-    if request.method == 'POST':
-        shelter_name = request.form.get('name', '').strip()
+    form_values = {
+        'name': '',
+        'address': '',
+        'facilities': [],
+        'damages': [],
+        'congestion': '',
+    }
+    errors = []
+    registered = request.args.get('registered') == '1'
 
-        if not shelter_name:
+    if request.method == 'POST':
+        form_values = shelter_form_values()
+        form_values['name'] = form_values['name'].strip()
+        form_values['address'] = form_values['address'].strip()
+
+        if not form_values['name']:
+            errors.append('避難所名を入力してください。')
+        if not form_values['address']:
+            errors.append('避難所住所を入力してください。')
+        if form_values['congestion'] not in ('空いている', '通常', '混雑', '満員'):
+            errors.append('混雑状況を選択してください。')
+
+        image_url, image_path = save_shelter_image(request.files.get('image'))
+        if image_url is None:
+            errors.append(image_path)
+
+        if errors:
             return render_template(
                 'shelter_register.html',
-                message='新しい避難所情報を登録します。避難所名を入力してください。',
+                message='入力内容を確認してください。',
                 success=False,
                 error=True,
+                errors=errors,
+                form_values=form_values,
             )
 
-        new_id = max((s.get('id', 0) for s in shelters), default=0) + 1
-        shelters.append({
+        new_id = max((int(s.get('id', 0)) for s in shelters), default=0) + 1
+        now = datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z')
+        new_shelter = {
             'id': new_id,
-            'name': shelter_name,
-        })
+            'name': form_values['name'],
+            'address': form_values['address'],
+            'facilities': form_values['facilities'],
+            'damages': form_values['damages'],
+            'congestion': form_values['congestion'],
+            'status': 'full' if form_values['congestion'] == '満員' else 'available',
+            'image': image_url or '',
+            'created_at': now,
+            'updated_at': now,
+        }
+        shelters.append(new_shelter)
 
         try:
             with open(DATA_FILE, 'w', encoding='utf-8') as f:
                 json.dump(shelters, f, ensure_ascii=False, indent=2)
         except Exception:
-            pass
+            shelters.pop()
+            if image_path:
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+            return render_template(
+                'shelter_register.html',
+                message='避難所情報の保存に失敗しました。登録内容は保存されていません。',
+                success=False,
+                error=True,
+                errors=['データ保存に失敗しました。時間をおいて再試行してください。'],
+                form_values=form_values,
+            ), 500
 
-        return render_template(
-            'shelter_register.html',
-            message='避難所を登録しました。',
-            success=True,
-            error=False,
-        )
+        return redirect(url_for('shelter_register', registered='1'))
 
     return render_template(
         'shelter_register.html',
-        message='新しい避難所情報を登録します。避難所名を入力してください。',
-        success=False,
+        message='避難所を登録しました。' if registered else '登録済みの避難所情報を確認・追加できます。',
+        success=registered,
         error=False,
+        errors=errors,
+        form_values=form_values,
     )
 
 # 避難所検索ページ
 @app.route('/shelter_search')
 def shelter_search():
-    return render_template('shelter_search.html')
+    return render_template(
+        'shelter_search.html',
+        selected_areas=_clean_query_values(request.args.getlist('areas')),
+        selected_facilities=_clean_query_values(request.args.getlist('facilities')),
+    )
 
 # 全施設一覧ページ
 @app.route('/all_shelters')
 def all_shelters():
-    return render_template('search_results.html', results=shelters)
+    return render_search_results(shelters, '')
 
 
 # 指示ボード：住民向けの指示を一覧で確認する
@@ -392,7 +586,7 @@ def board():
                 'status': urgency_map.get(urgency, urgency),
                 'created_at': now,
                 'updated_at': now,
-                'channels': ', '.join(channels),
+                'channels': channels,
                 'urgency': urgency,
                 'image_url': image_url,
             })
@@ -442,6 +636,7 @@ def board():
         current_page=current_page,
         total_pages=total_pages,
         total_history=total_history,
+        all_history=history_entries,
         has_previous=current_page > 1,
         has_next=current_page < total_pages,
     )
@@ -449,13 +644,29 @@ def board():
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
 def search_results():
-    results = filter_shelters(request.args.get('district'))
-    return render_template('search_results.html', results=results)
+    results = filter_shelters(
+        name=request.args.get('name'),
+        district=request.args.get('district'),
+        areas=request.args.getlist('areas'),
+        facilities=request.args.getlist('facilities'),
+    )
+    return render_search_results(results, request.query_string.decode('utf-8'))
+
+
+def render_search_results(results, search_query):
+    prepared_results = prepare_shelter_results(results)
+    return render_template(
+        'search_results.html',
+        results=prepared_results,
+        search_query=search_query,
+        map_data=prepared_results,
+        current_location={'latitude': DEFAULT_LOCATION[0], 'longitude': DEFAULT_LOCATION[1]},
+    )
 
 # JSON API：/shelters?district=地区名
 @app.route('/shelters', methods=['GET'])
 def get_shelters():
-    results = filter_shelters(request.args.get('district'))
+    results = filter_shelters(district=request.args.get('district'))
 
     if not results:
         # 見つからなければエラー JSON を返す

@@ -9,81 +9,27 @@
     color: #111827 !important;
   }
 
-  :root {
-    --board-font-scale: 1;
-  }
-
   .board-page {
     max-width: 1120px;
     margin: 0 auto;
     padding: 8px 0 40px;
     color: #111827;
-    font-size: calc(16px * var(--board-font-scale));
+    font-size: 1rem;
     line-height: 1.5;
   }
 
-  .board-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-
-  .text-size-group,
-  .language-wrap,
-  .speak-wrap,
   .status-wrap {
     display: inline-flex;
     align-items: center;
   }
 
-  .size-button {
-    min-width: 52px;
-    height: 42px;
-    padding: 0 14px;
-    border: 1px solid #bfd4ea;
-    background: #ffffff;
-    color: #103a5b;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s ease;
-    font-size: 1em;
-  }
-
-  .size-button + .size-button {
-    border-left: none;
-  }
-
-  .size-button:hover,
   .primary-btn:hover,
   .upload-btn:hover,
   .search-button:hover,
-  .reload-button:hover,
-  .read-button:hover {
+  .reload-button:hover {
     filter: brightness(0.98);
   }
 
-  .size-button.is-active {
-    background: #dfeffb;
-    border-color: #9ac0e1;
-    box-shadow: inset 0 0 0 1px rgba(16, 58, 91, 0.08);
-  }
-
-  .language-wrap select {
-    min-width: 220px;
-    height: 42px;
-    border: 1px solid #bfd4ea;
-    border-radius: 0;
-    background: #ffffff;
-    padding: 0 16px;
-    font-size: 0.875em;
-    color: #1f2937;
-    cursor: pointer;
-  }
-
-  .read-button,
   .reload-button,
   .upload-btn,
   .search-button,
@@ -93,12 +39,6 @@
     color: #103a5b;
     font-weight: 700;
     cursor: pointer;
-  }
-
-  .read-button {
-    height: 42px;
-    padding: 0 18px;
-    font-size: 1em;
   }
 
   .status-wrap {
@@ -538,10 +478,6 @@
       min-width: 0;
     }
 
-    .board-toolbar {
-      justify-content: flex-start;
-    }
-
     .status-wrap {
       justify-content: flex-start;
       margin-bottom: 12px;
@@ -556,26 +492,6 @@
     </div>
   {% endif %}
 
-  <div class="board-toolbar">
-    <div class="text-size-group" aria-label="文字サイズ変更">
-      <button class="size-button" type="button" data-size="large">大</button>
-      <button class="size-button is-active" type="button" data-size="medium">中</button>
-      <button class="size-button" type="button" data-size="small">小</button>
-    </div>
-
-    <div class="language-wrap">
-      <select aria-label="言語選択">
-        <option selected>▼ 選択してください (言語選択)</option>
-        <option value="ja">日本語</option>
-        <option value="en">English</option>
-      </select>
-    </div>
-
-    <div class="speak-wrap">
-      <button class="read-button" type="button">文字読み上げ</button>
-    </div>
-  </div>
-
   <div class="status-wrap">
     <div class="status-text">
       <strong>通信状態: 良好</strong><br>
@@ -585,10 +501,10 @@
   </div>
 
   <div class="new-message-row">
-    <button class="primary-btn new-message-btn" type="button">📢新規発信</button>
+    <button id="newMessageButton" class="primary-btn new-message-btn" type="button">📢新規発信</button>
   </div>
 
-  <form method="post" action="/board" enctype="multipart/form-data" aria-label="発信フォーム">
+  <form id="messageForm" method="post" action="/board" enctype="multipart/form-data" aria-label="発信フォーム">
     <section class="board-form">
       <div class="field-row">
         <div class="field-label">[送信先]</div>
@@ -606,7 +522,7 @@
           <label class="choice-item"><input type="checkbox" name="channels" value="アプリ">アプリ</label>
           <label class="choice-item"><input type="checkbox" name="channels" value="屋外スピーカー">屋外スピーカー</label>
           <label class="choice-item"><input type="checkbox" name="channels" value="戸別受信機">戸別受信機</label>
-          <label class="choice-item"><input type="checkbox" name="channels" value="SNS (X等)">SNS (X等)</label>
+          <label class="choice-item"><input type="checkbox" name="channels" value="SNS">SNS</label>
         </div>
       </div>
 
@@ -707,26 +623,6 @@
 </div>
 
 <script>
-  const sizeButtons = document.querySelectorAll('.size-button');
-  const root = document.documentElement;
-
-  function applyTextScale(size) {
-    const scaleMap = {
-      large: 1.18,
-      medium: 1,
-      small: 0.9
-    };
-
-    root.style.setProperty('--board-font-scale', scaleMap[size] || 1);
-    sizeButtons.forEach((button) => {
-      button.classList.toggle('is-active', button.dataset.size === size);
-    });
-  }
-
-  sizeButtons.forEach((button) => {
-    button.addEventListener('click', () => applyTextScale(button.dataset.size));
-  });
-
   const lastUpdatedText = document.getElementById('lastUpdatedText');
   const reloadButton = document.getElementById('reloadButton');
   const uploadTrigger = document.getElementById('uploadTrigger');
@@ -749,6 +645,9 @@
   const messagePreviewContent = document.getElementById('messagePreviewContent');
   const messagePreviewImage = document.getElementById('messagePreviewImage');
   const messagePreviewNoImage = document.getElementById('messagePreviewNoImage');
+  const messageForm = document.getElementById('messageForm');
+  const newMessageButton = document.getElementById('newMessageButton');
+  const allHistory = {{ all_history|tojson }};
 
   function updateLastUpdated() {
     const now = new Date();
@@ -759,6 +658,14 @@
 
   if (reloadButton) {
     reloadButton.addEventListener('click', updateLastUpdated);
+  }
+
+  if (newMessageButton && messageForm) {
+    newMessageButton.addEventListener('click', () => {
+      messageForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const messageInput = messageForm.querySelector('[name="message"]');
+      if (messageInput) messageInput.focus({ preventScroll: true });
+    });
   }
 
   if (uploadTrigger && imageUpload) {
@@ -874,27 +781,36 @@
     });
   }
 
+  function renderHistoryItems(items) {
+    const historyList = document.getElementById('historyList');
+    if (!historyList) return;
+    historyList.innerHTML = '';
+    items.forEach((item) => {
+      const li = document.createElement('li');
+      li.className = 'history-item';
+      li.dataset.historyItem = `${item.content || ''} ${item.target || ''} ${item.status || ''} ${item.created_at || ''}`;
+      li.dataset.historyText = item.content || '';
+      li.dataset.imageUrl = item.image_url || '';
+      li.dataset.historyMeta = `${item.status || ''} / 対象:${item.target || ''} / ${item.created_at || ''}`;
+      li.textContent = `${item.created_at || ''} ${item.status || ''} ${item.content || ''} (対象:${item.target || ''})`;
+      historyList.appendChild(li);
+    });
+    bindHistoryPreview();
+  }
+
   if (historySearchInput && historyItems.length) {
     historySearchInput.addEventListener('input', function () {
       const keyword = this.value.trim().toLowerCase();
-      let visibleCount = 0;
-
-      historyItems.forEach((item) => {
-        const haystack = (item.dataset.historyItem || '').toLowerCase();
-        const matches = !keyword || haystack.includes(keyword);
-        item.style.display = matches ? '' : 'none';
-        if (matches) visibleCount += 1;
+      const filtered = allHistory.filter((item) => {
+        const haystack = `${item.content || ''} ${item.target || ''} ${item.status || ''} ${item.created_at || ''}`.toLowerCase();
+        return !keyword || haystack.includes(keyword);
       });
-
-      const emptyState = document.getElementById('historyEmptyState');
-      if (emptyState) emptyState.remove();
-
-      if (visibleCount === 0 && !document.getElementById('historyEmptyState')) {
-        const li = document.createElement('li');
-        li.id = 'historyEmptyState';
-        li.className = 'history-item';
-        li.textContent = '該当する発信履歴はありません。';
-        document.getElementById('historyList').appendChild(li);
+      renderHistoryItems(filtered);
+      if (!filtered.length) {
+        const emptyState = document.createElement('li');
+        emptyState.className = 'history-item';
+        emptyState.textContent = '該当する発信履歴はありません。';
+        document.getElementById('historyList').appendChild(emptyState);
       }
     });
   }

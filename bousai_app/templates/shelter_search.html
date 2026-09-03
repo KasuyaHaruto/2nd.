@@ -1,8 +1,103 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h2>避難所検索</h2>
-<p>登録されている避難所を確認できます。</p>
+{% block title %}避難所検索 | 防災アプリ{% endblock %}
 
-<p><a href="/all_shelters">全施設一覧</a></p>
+{% block content %}
+<style>
+	.search-form { display: grid; gap: 18px; }
+	.search-field { display: grid; gap: 7px; }
+	.search-label { font-weight: 700; color: var(--brand-blue-dark); }
+	.search-input-row { display: flex; gap: 8px; }
+	.search-input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+	.voice-button { border: 1px solid var(--brand-blue); background: #fff; color: var(--brand-blue); border-radius: 8px; padding: 0 12px; cursor: pointer; }
+	.check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+	.check-item { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+	.form-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+	.form-actions button, .form-actions a { padding: 10px 16px; border: 0; border-radius: 8px; font: inherit; cursor: pointer; text-decoration: none; }
+	.primary-action { background: var(--brand-blue); color: #fff; }
+	.secondary-action { background: #e2e8ed; color: var(--text-main); }
+	.voice-status { min-height: 1.5em; color: var(--text-muted); }
+</style>
+
+<section class="section-card">
+	<div class="card-title"><span class="icon" aria-hidden="true">⌕</span><h2>避難所検索</h2></div>
+	<p>登録されている避難所を条件から検索できます。</p>
+
+	<form class="search-form" method="get" action="{{ url_for('search_results') }}">
+		<div class="search-field">
+			<label class="search-label" for="name">避難所名</label>
+			<div class="search-input-row">
+				<input class="search-input" type="search" id="name" name="name" value="{{ request.args.get('name', '') }}" placeholder="例: 中学校、体育館">
+				<button class="voice-button" type="button" data-voice-target="name" aria-label="避難所名を音声入力">音声</button>
+			</div>
+		</div>
+		<div class="search-field">
+			<label class="search-label" for="district">地区</label>
+			<div class="search-input-row">
+				<input class="search-input" type="search" id="district" name="district" value="{{ request.args.get('district', '') }}" placeholder="例: 中央、東部">
+				<button class="voice-button" type="button" data-voice-target="district" aria-label="地区を音声入力">音声</button>
+			</div>
+		</div>
+		<fieldset class="search-field">
+			<legend class="search-label">エリア</legend>
+			<div class="check-grid">
+				{% for area in ['北部', '東部', '西部', '南部'] %}
+					<label class="check-item"><input type="checkbox" name="areas" value="{{ area }}" {% if area in selected_areas %}checked{% endif %}>{{ area }}</label>
+				{% endfor %}
+			</div>
+		</fieldset>
+		<fieldset class="search-field">
+			<legend class="search-label">設備</legend>
+			<div class="check-grid">
+				{% set facility_options = [('pet_allowed', 'ペット可'), ('barrier_free', 'バリアフリー'), ('available_only', '空きありのみ表示'), ('climate_control', '冷暖房機器'), ('infection_control', '感染症対策設備'), ('english_support', '英語対応可')] %}
+				{% for value, label in facility_options %}
+					<label class="check-item"><input type="checkbox" name="facilities" value="{{ value }}" {% if value in selected_facilities %}checked{% endif %}>{{ label }}</label>
+				{% endfor %}
+			</div>
+		</fieldset>
+		<div id="voiceStatus" class="voice-status" aria-live="polite" role="status"></div>
+		<div class="form-actions">
+			<button class="primary-action" type="submit">検索</button>
+			<button class="secondary-action" id="clearSearch" type="button">クリア</button>
+			<a class="secondary-action" href="{{ url_for('all_shelters') }}">全施設一覧を表示</a>
+		</div>
+	</form>
+</section>
+
+<script>
+	const voiceStatus = document.getElementById('voiceStatus');
+	const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+	document.querySelectorAll('[data-voice-target]').forEach((button) => {
+		if (!SpeechRecognition) {
+			button.disabled = true;
+			button.title = '音声入力に対応していないブラウザです';
+			voiceStatus.textContent = '未対応ブラウザのため音声入力は利用できません';
+			return;
+		}
+		button.addEventListener('click', () => {
+			const recognition = new SpeechRecognition();
+			recognition.lang = 'ja-JP';
+			recognition.interimResults = false;
+			button.disabled = true;
+			voiceStatus.textContent = 'リスニング中';
+			recognition.onresult = (event) => {
+				const text = event.results[0][0].transcript;
+				document.getElementById(button.dataset.voiceTarget).value = text;
+				voiceStatus.textContent = `入力完了: ${text}`;
+			};
+			recognition.onerror = (event) => {
+				const messages = { 'no-speech': '音声がありません', 'audio-capture': 'マイクが検出されません', 'network': 'ネットワークエラー', 'not-allowed': 'マイクの権限が拒否されました' };
+				voiceStatus.textContent = messages[event.error] || '音声入力でエラーが発生しました';
+			};
+			recognition.onend = () => { button.disabled = false; };
+			try { recognition.start(); } catch (error) { button.disabled = false; voiceStatus.textContent = '音声入力を開始できません'; }
+		});
+	});
+	document.getElementById('clearSearch').addEventListener('click', () => {
+		const form = document.querySelector('form');
+		form.querySelectorAll('input[type="search"]').forEach((input) => { input.value = ''; });
+		form.querySelectorAll('input[type="checkbox"]').forEach((input) => { input.checked = false; });
+		voiceStatus.textContent = '';
+	});
+</script>
 {% endblock %}
