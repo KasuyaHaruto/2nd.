@@ -34,7 +34,18 @@ class ShelterRegisterPageTest(unittest.TestCase):
         self.assertIn('即時避難', html)
         self.assertIn('プレビュー確認する', html)
         self.assertIn('キーワードで過去の指示を検索', html)
-        self.assertIn('2026/09/02 10:15', html)
+        self.assertRegex(html, r'\d+ / \d+ ページ（全\d+件）')
+
+    def test_board_history_pagination_uses_requested_page(self):
+        first_page = self.client.get('/board?page=1')
+        second_page = self.client.get('/board?page=2')
+
+        self.assertEqual(first_page.status_code, 200)
+        self.assertEqual(second_page.status_code, 200)
+        self.assertIn('1 / ', first_page.get_data(as_text=True))
+        self.assertIn('2 / ', second_page.get_data(as_text=True))
+        self.assertIn('次の3件 ▶', first_page.get_data(as_text=True))
+        self.assertIn('◀ 前の3件', second_page.get_data(as_text=True))
 
     def test_board_post_saves_message_to_history(self):
         response = self.client.post('/board', data={
@@ -57,6 +68,14 @@ class ShelterRegisterPageTest(unittest.TestCase):
         self.assertIn('history-search', html)
         self.assertIn('historyPreview', html)
         self.assertIn('data-image-url', html)
+        self.assertIn('imageLightbox', html)
+        self.assertIn('添付画像の全画面表示', html)
+        self.assertIn('messagePreviewModal', html)
+        self.assertIn('messagePreviewTargets', html)
+        self.assertIn('messagePreviewChannels', html)
+        self.assertIn('messagePreviewUrgency', html)
+        self.assertIn('messagePreviewContent', html)
+        self.assertIn('messagePreviewImage', html)
 
     def test_board_post_saves_uploaded_image_and_shows_preview_url(self):
         response = self.client.post(

@@ -363,12 +363,13 @@
 
   .history-preview-image {
     width: 100%;
-    max-height: 220px;
-    object-fit: cover;
+    max-height: min(520px, 62vh);
+    object-fit: contain;
     border: 1px solid #dfe7ef;
     border-radius: 10px;
     background: #eef6ff;
     display: none;
+    cursor: zoom-in;
   }
 
   .history-preview-empty {
@@ -379,6 +380,125 @@
     padding: 16px;
     text-align: center;
     font-size: 0.9em;
+  }
+
+  .image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  .image-lightbox.is-open {
+    display: flex;
+  }
+
+  .image-lightbox-image {
+    max-width: 96vw;
+    max-height: 94vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .image-lightbox-close {
+    position: fixed;
+    top: 16px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.72);
+    color: #ffffff;
+    font-size: 1.8em;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .message-preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.72);
+  }
+
+  .message-preview-modal.is-open {
+    display: flex;
+  }
+
+  .message-preview-dialog {
+    width: min(760px, 100%);
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 24px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.3);
+  }
+
+  .message-preview-title {
+    margin: 0 0 18px;
+    color: #103a5b;
+    font-size: 1.35em;
+  }
+
+  .message-preview-details {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+    color: #1f2937;
+  }
+
+  .message-preview-details strong {
+    color: #103a5b;
+  }
+
+  .message-preview-content {
+    min-height: 80px;
+    margin-bottom: 16px;
+    padding: 14px;
+    border: 1px solid #dfe7ef;
+    border-radius: 10px;
+    background: #f8fbff;
+    color: #111827;
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+
+  .message-preview-image {
+    display: none;
+    width: 100%;
+    max-height: 55vh;
+    object-fit: contain;
+    border: 1px solid #dfe7ef;
+    border-radius: 10px;
+    background: #eef6ff;
+  }
+
+  .message-preview-no-image {
+    padding: 14px;
+    border: 1px dashed #bfd4ea;
+    border-radius: 10px;
+    color: #5a6d7d;
+    text-align: center;
+  }
+
+  .message-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
   }
 
   .pagination {
@@ -512,10 +632,27 @@
     </section>
 
     <div class="action-row">
-      <button class="primary-btn" type="button">プレビュー確認する</button>
+      <button id="messagePreviewTrigger" class="primary-btn" type="button">プレビュー確認する</button>
       <button class="primary-btn" type="submit">上記の内容で一斉送信する</button>
     </div>
   </form>
+
+  <div id="messagePreviewModal" class="message-preview-modal" role="dialog" aria-modal="true" aria-labelledby="messagePreviewTitle">
+    <div class="message-preview-dialog">
+      <h2 id="messagePreviewTitle" class="message-preview-title">発信内容のプレビュー</h2>
+      <div class="message-preview-details">
+        <div><strong>送信先:</strong> <span id="messagePreviewTargets">未選択</span></div>
+        <div><strong>発信手段:</strong> <span id="messagePreviewChannels">未選択</span></div>
+        <div><strong>緊急度:</strong> <span id="messagePreviewUrgency">未選択</span></div>
+      </div>
+      <div id="messagePreviewContent" class="message-preview-content">メッセージ未入力</div>
+      <img id="messagePreviewImage" class="message-preview-image" alt="添付画像のプレビュー" />
+      <div id="messagePreviewNoImage" class="message-preview-no-image">添付画像はありません</div>
+      <div class="message-preview-actions">
+        <button id="messagePreviewClose" class="primary-btn" type="button">閉じる</button>
+      </div>
+    </div>
+  </div>
 
   <section class="history-box" aria-label="発信履歴">
     <div class="search-row">
@@ -548,7 +685,24 @@
       </div>
     </div>
 
-    <div class="pagination">[◀ 前の3件] 1 / 5 ページ [次の3件 ▶]</div>
+    <div id="imageLightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-label="添付画像の全画面表示">
+      <button id="imageLightboxClose" class="image-lightbox-close" type="button" aria-label="画像を閉じる">×</button>
+      <img id="imageLightboxImage" class="image-lightbox-image" alt="添付画像の全画面表示" />
+    </div>
+
+    <nav class="pagination" aria-label="発信履歴ページ移動">
+      {% if has_previous %}
+        <a href="{{ url_for('board', page=current_page - 1) }}">◀ 前の3件</a>
+      {% else %}
+        <span class="pagination-disabled">◀ 前の3件</span>
+      {% endif %}
+      <span>{{ current_page }} / {{ total_pages }} ページ（全{{ total_history }}件）</span>
+      {% if has_next %}
+        <a href="{{ url_for('board', page=current_page + 1) }}">次の3件 ▶</a>
+      {% else %}
+        <span class="pagination-disabled">次の3件 ▶</span>
+      {% endif %}
+    </nav>
   </section>
 </div>
 
@@ -583,6 +737,18 @@
   const historyPreviewText = document.getElementById('historyPreviewText');
   const historyPreviewImage = document.getElementById('historyPreviewImage');
   const historyPreviewEmpty = document.getElementById('historyPreviewEmpty');
+  const imageLightbox = document.getElementById('imageLightbox');
+  const imageLightboxImage = document.getElementById('imageLightboxImage');
+  const imageLightboxClose = document.getElementById('imageLightboxClose');
+  const messagePreviewTrigger = document.getElementById('messagePreviewTrigger');
+  const messagePreviewModal = document.getElementById('messagePreviewModal');
+  const messagePreviewClose = document.getElementById('messagePreviewClose');
+  const messagePreviewTargets = document.getElementById('messagePreviewTargets');
+  const messagePreviewChannels = document.getElementById('messagePreviewChannels');
+  const messagePreviewUrgency = document.getElementById('messagePreviewUrgency');
+  const messagePreviewContent = document.getElementById('messagePreviewContent');
+  const messagePreviewImage = document.getElementById('messagePreviewImage');
+  const messagePreviewNoImage = document.getElementById('messagePreviewNoImage');
 
   function updateLastUpdated() {
     const now = new Date();
@@ -604,6 +770,83 @@
       }
     });
   }
+
+  function closeMessagePreview() {
+    if (messagePreviewModal) {
+      messagePreviewModal.classList.remove('is-open');
+    }
+  }
+
+  if (messagePreviewTrigger && messagePreviewModal) {
+    messagePreviewTrigger.addEventListener('click', () => {
+      const selectedTargets = Array.from(document.querySelectorAll('input[name="targets"]:checked'));
+      const selectedChannels = Array.from(document.querySelectorAll('input[name="channels"]:checked'));
+      const selectedUrgency = document.querySelector('input[name="urgency"]:checked');
+      const selectedFile = imageUpload && imageUpload.files ? imageUpload.files[0] : null;
+
+      messagePreviewTargets.textContent = selectedTargets.length
+        ? selectedTargets.map((input) => input.value).join('、')
+        : '未選択';
+      messagePreviewChannels.textContent = selectedChannels.length
+        ? selectedChannels.map((input) => input.value).join('、')
+        : '未選択';
+      messagePreviewUrgency.textContent = selectedUrgency ? selectedUrgency.value : '未選択';
+      messagePreviewContent.textContent = document.querySelector('[name="message"]').value.trim() || 'メッセージ未入力';
+
+      if (selectedFile && selectedFile.type.startsWith('image/')) {
+        messagePreviewImage.src = URL.createObjectURL(selectedFile);
+        messagePreviewImage.style.display = 'block';
+        messagePreviewNoImage.style.display = 'none';
+      } else {
+        messagePreviewImage.removeAttribute('src');
+        messagePreviewImage.style.display = 'none';
+        messagePreviewNoImage.style.display = 'block';
+      }
+      messagePreviewModal.classList.add('is-open');
+    });
+  }
+
+  if (messagePreviewClose) {
+    messagePreviewClose.addEventListener('click', closeMessagePreview);
+  }
+
+  if (messagePreviewModal) {
+    messagePreviewModal.addEventListener('click', (event) => {
+      if (event.target === messagePreviewModal) closeMessagePreview();
+    });
+  }
+
+  function closeImageLightbox() {
+    if (imageLightbox) {
+      imageLightbox.classList.remove('is-open');
+    }
+    if (imageLightboxImage) {
+      imageLightboxImage.removeAttribute('src');
+    }
+  }
+
+  if (historyPreviewImage && imageLightbox && imageLightboxImage) {
+    historyPreviewImage.addEventListener('click', () => {
+      if (!historyPreviewImage.src) return;
+      imageLightboxImage.src = historyPreviewImage.src;
+      imageLightbox.classList.add('is-open');
+    });
+  }
+
+  if (imageLightboxClose) {
+    imageLightboxClose.addEventListener('click', closeImageLightbox);
+  }
+
+  if (imageLightbox) {
+    imageLightbox.addEventListener('click', (event) => {
+      if (event.target === imageLightbox) closeImageLightbox();
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeImageLightbox();
+    if (event.key === 'Escape') closeMessagePreview();
+  });
 
   function bindHistoryPreview() {
     historyItems.forEach((item) => {

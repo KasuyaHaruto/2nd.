@@ -423,20 +423,28 @@ def board():
         }
     ]
 
-    history_entries = list(default_history)
-    if request.method == 'POST' and success_message:
-        history_entries = [
-            {
-                'created_at': datetime.now(JST).strftime('%Y/%m/%d %H:%M'),
-                'status': urgency_map.get(urgency, '【🔵お知らせ】'),
-                'content': message,
-                'target': target_value,
-                'image_url': image_url,
-            },
-            *history_entries,
-        ]
+    history_entries = list(instructions) or list(default_history)
+    items_per_page = 3
+    total_history = len(history_entries)
+    total_pages = max(1, (total_history + items_per_page - 1) // items_per_page)
+    try:
+        current_page = int(request.args.get('page', 1))
+    except (TypeError, ValueError):
+        current_page = 1
+    current_page = min(max(current_page, 1), total_pages)
+    start_index = (current_page - 1) * items_per_page
+    page_entries = history_entries[start_index:start_index + items_per_page]
 
-    return render_template('board.html', instructions=history_entries, message=success_message)
+    return render_template(
+        'board.html',
+        instructions=page_entries,
+        message=success_message,
+        current_page=current_page,
+        total_pages=total_pages,
+        total_history=total_history,
+        has_previous=current_page > 1,
+        has_next=current_page < total_pages,
+    )
 
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
