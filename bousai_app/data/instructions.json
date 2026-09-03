@@ -1,5 +1,17 @@
 [
   {
+    "id": 31,
+    "target": "全住民",
+    "content": "森林火災発生。付近の住民は避難してください。",
+    "shelter": "",
+    "status": "🔴即時避難",
+    "created_at": "2026/09/03 10:35",
+    "updated_at": "2026/09/03 10:35",
+    "channels": "アプリ, 屋外スピーカー",
+    "urgency": "即時避難",
+    "image_url": "/static/uploads/20260903103527_jpg"
+  },
+  {
     "id": 30,
     "target": "全住民",
     "content": "森林火災発生。付近の住民は避難してください。",
