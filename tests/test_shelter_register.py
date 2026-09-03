@@ -23,6 +23,39 @@ class ShelterRegisterPageTest(unittest.TestCase):
         self.assertIn('新しい避難所情報を登録します。避難所名を入力してください。', html)
         self.assertIn('避難所名（必須）', html)
 
+    def test_safety_confirmation_is_saved_and_counted_for_admin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            data_file = os.path.join(directory, 'safety_confirmations.json')
+            confirmations = []
+            with patch.object(app_module, 'safety_confirmations', confirmations), \
+                    patch.object(app_module, 'SAFETY_CONFIRMATIONS_FILE', data_file):
+                response = self.client.post('/api/safety_confirmations')
+                self.assertEqual(response.status_code, 201)
+                self.assertEqual(response.json['message'], '安否確認を登録しました。')
+                with open(data_file, encoding='utf-8') as file:
+                    self.assertEqual(len(json.load(file)), 1)
+                home = self.client.get('/')
+                self.assertIn('ワンタッチ安否確認：<strong>1</strong> 件', home.get_data(as_text=True))
+
+    def test_safety_count_is_not_shown_to_public_users(self):
+        with patch.object(app_module, 'safety_confirmations', [{'created_at': 'now'}]):
+            html = self.client.get('/logout', follow_redirects=True).get_data(as_text=True)
+            self.assertNotIn('管理者ステータス', html)
+
+    def test_safety_confirmation_toggles_without_duplicate_count(self):
+        with tempfile.TemporaryDirectory() as directory:
+            data_file = os.path.join(directory, 'safety_confirmations.json')
+            confirmations = []
+            with patch.object(app_module, 'safety_confirmations', confirmations), \
+                    patch.object(app_module, 'SAFETY_CONFIRMATIONS_FILE', data_file):
+                payload = {'client_id': 'browser-1', 'status': 'on'}
+                self.assertEqual(self.client.post('/api/safety_confirmations', json=payload).json['count'], 1)
+                self.assertEqual(self.client.post('/api/safety_confirmations', json=payload).json['count'], 1)
+                off = self.client.post('/api/safety_confirmations', json={**payload, 'status': 'off'})
+                self.assertEqual(off.json['status'], 'off')
+                self.assertEqual(off.json['count'], 0)
+                self.assertEqual(confirmations[0]['status'], 'off')
+
     def test_post_registers_shelter_and_shows_success_message(self):
         response = self.client.post('/shelter_register', data={
             'name': 'テスト避難所',

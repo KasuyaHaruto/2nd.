@@ -7,6 +7,7 @@
 	.search-form { display: grid; gap: 18px; }
 	.search-field { display: grid; gap: 7px; }
 	.search-label { font-weight: 700; color: var(--brand-blue-dark); }
+	.field-note { margin: 0; color: var(--text-muted); font-size: .9rem; }
 	.search-input-row { display: flex; gap: 8px; }
 	.search-input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
 	.voice-button { border: 1px solid var(--brand-blue); background: #fff; color: var(--brand-blue); border-radius: 8px; padding: 0 12px; cursor: pointer; }
@@ -32,16 +33,18 @@
 			</div>
 		</div>
 		<div class="search-field">
-			<label class="search-label" for="district">地区</label>
+			<label class="search-label" for="district">住所（地区名・町名）</label>
 			<div class="search-input-row">
 				<input class="search-input" type="search" id="district" name="district" value="{{ request.args.get('district', '') }}" placeholder="例: 中央、東部">
-				<button class="voice-button" type="button" data-voice-target="district" aria-label="地区を音声入力">音声</button>
+				<button class="voice-button" type="button" data-voice-target="district" aria-label="住所（地区名・町名）を音声入力">音声</button>
 			</div>
+			<p class="field-note">地区名や町名を入力して検索します。</p>
 		</div>
 		<fieldset class="search-field">
-			<legend class="search-label">エリア</legend>
+			<legend class="search-label">住所区分（地域）</legend>
+			<p class="field-note">避難所住所の地域区分で絞り込みます。</p>
 			<div class="check-grid">
-				{% for area in ['北部', '東部', '西部', '南部'] %}
+				{% for area in ['北部', '南部', '西部', '東部'] %}
 					<label class="check-item"><input type="checkbox" name="areas" value="{{ area }}" {% if area in selected_areas %}checked{% endif %}>{{ area }}</label>
 				{% endfor %}
 			</div>

@@ -404,5 +404,109 @@
     "updated_at": "2026-09-03T16:53:42+0900",
     "latitude": 34.6198813,
     "longitude": 135.490357
+  },
+  {
+    "id": 39,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:08:22+0900",
+    "updated_at": "2026-09-03T17:08:22+0900"
+  },
+  {
+    "id": 40,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:08:28+0900",
+    "updated_at": "2026-09-03T17:08:28+0900"
+  },
+  {
+    "id": 41,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:13:20+0900",
+    "updated_at": "2026-09-03T17:13:20+0900"
+  },
+  {
+    "id": 42,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:13:36+0900",
+    "updated_at": "2026-09-03T17:13:36+0900"
+  },
+  {
+    "id": 43,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:13:44+0900",
+    "updated_at": "2026-09-03T17:13:44+0900"
+  },
+  {
+    "id": 44,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:16:15+0900",
+    "updated_at": "2026-09-03T17:16:15+0900"
+  },
+  {
+    "id": 45,
+    "name": "テスト",
+    "address": "あ",
+    "district": "南部",
+    "facilities": [
+      "english_support"
+    ],
+    "damages": [
+      "electricity"
+    ],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:22:51+0900",
+    "updated_at": "2026-09-03T17:22:51+0900",
+    "latitude": 34.7084627,
+    "longitude": 137.729416
+  },
+  {
+    "id": 46,
+    "name": "テスト避難所",
+    "address": "藤沢市朝日町1-1",
+    "district": "",
+    "facilities": [],
+    "damages": [],
+    "congestion": "通常",
+    "status": "available",
+    "image": "",
+    "created_at": "2026-09-03T17:25:17+0900",
+    "updated_at": "2026-09-03T17:25:17+0900"
   }
 ]

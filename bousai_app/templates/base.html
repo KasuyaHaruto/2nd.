@@ -137,7 +137,7 @@
       position: fixed;
       top: 104px;
       right: 16px;
-      z-index: 15;
+      z-index: 1100;
       width: 176px;
       padding: 14px;
       background: #fff;
@@ -193,7 +193,29 @@
     .rail-button { text-align: left; }
     .rail-button:hover, .language-select:hover { border-color: var(--brand-blue); }
     .connection-status { display: block; min-height: 2.8em; margin-top: 8px; color: var(--text-muted); font-size: 0.8rem; }
-    .safety-button { background: var(--success); color: #fff; border-color: var(--success); font-weight: 700; text-align: center; }
+    .safety-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f3f5f7;
+      color: #4b5563;
+      border-color: #cbd5df;
+      font-weight: 700;
+      text-align: left;
+      transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .safety-button[aria-pressed="true"] { background: #e8f7ee; color: #176d42; border-color: #55ad78; }
+    .safety-button:disabled { opacity: .65; cursor: wait; }
+    .safety-indicator {
+      width: 11px;
+      height: 11px;
+      flex: 0 0 11px;
+      border-radius: 50%;
+      background: #9aa5af;
+      box-shadow: 0 0 0 3px #e1e5e9;
+    }
+    .safety-button[aria-pressed="true"] .safety-indicator { background: #22a05a; box-shadow: 0 0 0 3px #c8ecd5; }
+    .safety-label { flex: 1; }
     html[data-font-size="large"] { font-size: 120%; }
     html[data-font-size="small"] { font-size: 90%; }
 
@@ -485,7 +507,10 @@
       <button class="rail-button" type="button" id="connectionReload">↻ <span data-i18n="reloadConnection">通信状態を更新</span></button>
       <span class="connection-status" id="connectionStatus" aria-live="polite" data-i18n="goodConnection">通信状態: 良好</span>
       <span class="connection-status" id="connectionUpdatedAt" aria-live="polite"><span data-i18n="lastUpdate">最終更新</span>: --:--</span>
-      <button class="rail-button safety-button" type="button" id="safetyButton">ワンタップ安否登録</button>
+      <button class="rail-button safety-button" type="button" id="safetyButton" aria-pressed="false">
+        <span class="safety-indicator" aria-hidden="true"></span>
+        <span class="safety-label" id="safetyButtonLabel">安否確認：OFF</span>
+      </button>
       <span id="languageStatus" class="connection-status" aria-live="polite"></span>
     </div>
   </aside>
@@ -741,7 +766,41 @@
 
     const safetyButton = document.getElementById('safetyButton');
     if (safetyButton) {
-      safetyButton.addEventListener('click', function() { alert('安否登録できました'); });
+      const safetyStorageKey = 'bousai-safety-client-id';
+      const safetyStateKey = 'bousai-safety-state';
+      const clientId = localStorage.getItem(safetyStorageKey) || (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+      localStorage.setItem(safetyStorageKey, clientId);
+      let safetyState = localStorage.getItem(safetyStateKey) === 'on' ? 'on' : 'off';
+      const safetyButtonLabel = document.getElementById('safetyButtonLabel');
+      const updateSafetyButton = function() {
+        safetyButton.setAttribute('aria-pressed', String(safetyState === 'on'));
+        if (safetyButtonLabel) {
+          safetyButtonLabel.textContent = safetyState === 'on' ? '安否確認：ON（確認済み）' : '安否確認：OFF（未確認）';
+        }
+      };
+      updateSafetyButton();
+      safetyButton.addEventListener('click', async function() {
+        if (safetyButton.disabled) return;
+        safetyButton.disabled = true;
+        const nextState = safetyState === 'on' ? 'off' : 'on';
+        try {
+          const response = await fetch('/api/safety_confirmations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: clientId, status: nextState })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || '安否登録に失敗しました');
+          safetyState = nextState;
+          localStorage.setItem(safetyStateKey, safetyState);
+          updateSafetyButton();
+          alert(data.message);
+        } catch (error) {
+          alert(error.message || '安否登録に失敗しました');
+        } finally {
+          safetyButton.disabled = false;
+        }
+      });
     }
   </script>
 </body>

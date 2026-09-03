@@ -8,6 +8,7 @@
   .register-form { display: grid; gap: 18px; }
   .register-field { display: grid; gap: 7px; }
   .register-label { color: var(--brand-blue-dark); font-weight: 700; }
+  .field-note { margin: 0; color: var(--text-muted); font-size: .9rem; }
   .required { color: #b33636; font-size: .85em; }
   .register-input, .register-select { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; font: inherit; background: #fff; }
   .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 9px; }
@@ -39,6 +40,17 @@
     <div class="register-field">
       <label class="register-label" for="address">避難所住所（必須）</label>
       <input class="register-input" type="text" id="address" name="address" value="{{ form_values.address|default('') }}" placeholder="例: 藤沢市朝日町1-1" required>
+      <p class="field-note">番地まで含めた住所を入力してください。</p>
+    </div>
+    <div class="register-field">
+      <label class="register-label" for="district">住所区分（任意）</label>
+      <select class="register-select" id="district" name="district">
+        <option value="">区分を選択しない</option>
+        {% for area in ['北部', '南部', '西部', '東部'] %}
+          <option value="{{ area }}" {% if form_values.district|default('') == area %}selected{% endif %}>{{ area }}</option>
+        {% endfor %}
+      </select>
+      <p class="field-note">避難所住所が属する地域を選択すると、検索画面の住所区分で絞り込めます。</p>
     </div>
     <fieldset class="register-field">
       <legend class="register-label">避難所情報</legend>

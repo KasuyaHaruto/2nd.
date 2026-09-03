@@ -55,6 +55,10 @@
   </ul>
   <p class="news-empty" style="margin-top: 16px;"><span data-i18n="lastUpdate">最終更新</span>: <span id="latestUpdate">--:--</span></p>
   {% if session.logged_in %}
+  <section class="admin-status" aria-label="管理者ステータス">
+    <h3>管理者ステータス</h3>
+    <p>ワンタッチ安否確認：<strong>{{ safety_confirmation_count }}</strong> 件</p>
+  </section>
   <div class="admin-contact-list" aria-label="送信されたお問い合わせ">
     <h3>送信されたお問い合わせ</h3>
     <form class="admin-contact-search" method="get" action="{{ url_for('index') }}">

@@ -88,6 +88,7 @@ WARNING_CODES = {
 DATA_FILE = os.path.join(APP_DIR, 'data', 'shelters.json')
 INSTRUCTIONS_FILE = os.path.join(APP_DIR, 'data', 'instructions.json')
 CONTACT_MESSAGES_FILE = os.path.join(APP_DIR, 'data', 'contact_messages.json')
+SAFETY_CONFIRMATIONS_FILE = os.path.join(APP_DIR, 'data', 'safety_confirmations.json')
 UPLOAD_FOLDER = os.path.join(APP_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -103,6 +104,7 @@ def load_json(path, default):
 shelters = load_json(DATA_FILE, [])
 instructions = load_json(INSTRUCTIONS_FILE, [])
 contact_messages = load_json(CONTACT_MESSAGES_FILE, [])
+safety_confirmations = load_json(SAFETY_CONFIRMATIONS_FILE, [])
 
 def save_instructions():
     """指示ボードのデータをファイルに保存する"""
@@ -118,6 +120,16 @@ def save_contact_messages():
     try:
         with open(CONTACT_MESSAGES_FILE, 'w', encoding='utf-8') as f:
             json.dump(contact_messages, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False
+
+
+def save_safety_confirmations():
+    """ワンタッチ安否確認の履歴をファイルに保存する"""
+    try:
+        with open(SAFETY_CONFIRMATIONS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(safety_confirmations, f, ensure_ascii=False, indent=2)
         return True
     except Exception:
         return False
@@ -168,6 +180,7 @@ def shelter_form_values():
     return {
         'name': request.form.get('name', ''),
         'address': request.form.get('address', ''),
+        'district': request.form.get('district', ''),
         'facilities': request.form.getlist('facilities'),
         'damages': request.form.getlist('damages'),
         'congestion': request.form.get('congestion', ''),
@@ -479,7 +492,52 @@ def index():
         resident_notices=resident_notices,
         admin_contact_messages=admin_contact_messages,
         contact_query=contact_query,
+        safety_confirmation_count=sum(
+            1 for confirmation in safety_confirmations
+            if confirmation.get('status', 'on') == 'on'
+        ),
     )
+
+
+@app.route('/api/safety_confirmations', methods=['POST'])
+def register_safety_confirmation():
+    """ワンタッチ安否確認を利用者ごとにON/OFFする"""
+    payload = request.get_json(silent=True) or {}
+    status = payload.get('status', 'on')
+    client_id = str(payload.get('client_id', '')).strip()
+    legacy_request = not client_id
+    if status not in ('on', 'off'):
+        return jsonify({'error': '状態が不正です。'}), 400
+    if not client_id:
+        client_id = uuid.uuid4().hex
+
+    original_confirmations = [dict(confirmation) for confirmation in safety_confirmations]
+    matching = [confirmation for confirmation in safety_confirmations
+                if confirmation.get('client_id') == client_id]
+    if status == 'on':
+        if matching:
+            for confirmation in matching:
+                confirmation['status'] = 'on'
+                confirmation['updated_at'] = datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z')
+        else:
+            safety_confirmations.append({
+                'client_id': client_id,
+                'status': 'on',
+                'created_at': datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z')
+            })
+    else:
+        for confirmation in matching:
+            confirmation['status'] = 'off'
+            confirmation['updated_at'] = datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z')
+    if not save_safety_confirmations():
+        safety_confirmations[:] = original_confirmations
+        return jsonify({'error': '安否確認の保存に失敗しました。'}), 500
+    count = sum(1 for confirmation in safety_confirmations
+                if confirmation.get('status', 'on') == 'on')
+    message = ('安否確認を登録しました。' if legacy_request and status == 'on'
+               else '安否確認をONにしました。' if status == 'on'
+               else '安否確認をOFFにしました。')
+    return jsonify({'message': message, 'status': status, 'count': count}), 201
 
 
 @app.route('/admin/contact/<int:message_index>/status', methods=['POST'])
@@ -597,6 +655,7 @@ def shelter_register():
     form_values = {
         'name': '',
         'address': '',
+        'district': '',
         'facilities': [],
         'damages': [],
         'congestion': '',
@@ -637,6 +696,7 @@ def shelter_register():
             'id': new_id,
             'name': form_values['name'],
             'address': form_values['address'],
+            'district': form_values['district'],
             'facilities': form_values['facilities'],
             'damages': form_values['damages'],
             'congestion': form_values['congestion'],
@@ -690,6 +750,7 @@ def edit_shelter(shelter_id):
     form_values = {
         'name': shelter.get('name', ''),
         'address': shelter.get('address', ''),
+        'district': shelter.get('district', ''),
         'facilities': shelter.get('facilities', []) if isinstance(shelter.get('facilities'), list) else [],
         'damages': shelter.get('damages', []) if isinstance(shelter.get('damages'), list) else [],
         'congestion': shelter.get('congestion', ''),
@@ -720,6 +781,7 @@ def edit_shelter(shelter_id):
         updated.update({
             'name': form_values['name'],
             'address': form_values['address'],
+            'district': form_values['district'],
             'facilities': form_values['facilities'],
             'damages': form_values['damages'],
             'congestion': form_values['congestion'],
