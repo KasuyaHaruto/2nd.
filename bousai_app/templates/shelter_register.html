@@ -22,8 +22,8 @@
 </style>
 
 <section class="section-card register-card">
-  <div class="card-title"><span class="icon" aria-hidden="true">＋</span><h2>避難所登録</h2></div>
-  <p class="form-message{% if success %} success{% endif %}" role="status">{{ message or '登録済みの避難所情報を確認・追加できます。' }}<br>新しい避難所情報を登録します。避難所名を入力してください。</p>
+  <div class="card-title"><span class="icon" aria-hidden="true">＋</span><h2>{% if edit_shelter %}避難所情報の編集{% else %}避難所登録{% endif %}</h2></div>
+  <p class="form-message{% if success %} success{% endif %}" role="status">{{ message or ('登録済みの避難所情報を編集します。' if edit_shelter else '登録済みの避難所情報を確認・追加できます。') }}{% if not edit_shelter %}<br>新しい避難所情報を登録します。避難所名を入力してください。{% endif %}</p>
 
   {% if errors %}
     <ul class="form-errors" role="alert">
@@ -68,11 +68,12 @@
     <div class="register-field">
       <label class="register-label" for="image">避難所画像（任意）</label>
       <input class="register-input" type="file" id="image" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
+      {% if edit_shelter and edit_shelter.image %}<img class="preview-image" src="{{ edit_shelter.image }}" alt="現在の避難所画像">{% endif %}
       <span class="file-note" id="fileName">画像を選択してください。</span>
       <img class="preview-image" id="imagePreview" alt="選択した避難所画像のプレビュー">
     </div>
     <div class="form-actions">
-      <button class="register-button" type="submit">登録</button>
+      <button class="register-button" type="submit">{% if edit_shelter %}更新{% else %}登録{% endif %}</button>
       <a href="{{ url_for('shelter_search') }}">避難所検索へ</a>
     </div>
   </form>

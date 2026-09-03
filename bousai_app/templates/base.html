@@ -469,20 +469,20 @@
   <aside class="accessibility-rail" aria-label="共通操作">
     <button class="rail-collapse" type="button" id="railCollapse" aria-label="表示・操作を格納" aria-expanded="true" title="表示・操作を格納">⚙</button>
     <div class="rail-content">
-      <h2 class="rail-heading">表示・操作</h2>
+      <h2 class="rail-heading" data-i18n="displayControls">表示・操作</h2>
       <div class="font-size-tabs" role="group" aria-label="文字サイズ">
         <button type="button" data-font-size="large" aria-pressed="false">大</button>
         <button type="button" data-font-size="medium" aria-pressed="true">中</button>
         <button type="button" data-font-size="small" aria-pressed="false">小</button>
       </div>
-      <button class="rail-button" type="button" id="readAloudButton">文字読み上げ</button>
+      <button class="rail-button" type="button" id="readAloudButton" data-i18n="readAloud">文字読み上げ</button>
       <label class="rail-heading" for="languageSelect" style="margin-top: 10px;" data-i18n="language">言語選択</label>
       <select class="language-select" id="languageSelect">
         <option value="ja">日本語</option>
         <option value="en">English</option>
         <option value="zh">中文</option>
       </select>
-      <button class="rail-button" type="button" id="connectionReload">↻ 通信状態を更新</button>
+      <button class="rail-button" type="button" id="connectionReload">↻ <span data-i18n="reloadConnection">通信状態を更新</span></button>
       <span class="connection-status" id="connectionStatus" aria-live="polite" data-i18n="goodConnection">通信状態: 良好</span>
       <span class="connection-status" id="connectionUpdatedAt" aria-live="polite"><span data-i18n="lastUpdate">最終更新</span>: --:--</span>
       <button class="rail-button safety-button" type="button" id="safetyButton">ワンタップ安否登録</button>
@@ -572,10 +572,84 @@
     }
 
     const translations = {
-      ja: { appName: '防災アプリ', home: 'ホーム', shelterSearch: '避難所検索', shelterRegister: '避難所登録', instructionBoard: '指示・発信ボード', login: 'ログイン', logout: 'ログアウト', language: '言語選択', shelterMap: '避難所マップ', weather: '気象情報', contact: 'お問い合わせ', news: '新着情報', goodConnection: '通信状態: 良好', refresh: '10分おき自動更新', shelterDestination: '避難先', lastUpdate: '最終更新', targetArea: '対象地域', lastCheck: '最終確認', jmaLastReport: '気象庁最終発表', noWarnings: '現在、警報・注意報は発表されていません', weatherError: '気象情報の取得に失敗しました', noNews: '新着情報はありません', contactOrg: '青森市災害対策本部', contactPhone: '電話', contactAddress: '住所', emailForm: 'メール送信フォーム' },
-      en: { appName: 'Disaster Preparedness', home: 'Home', shelterSearch: 'Find Shelters', shelterRegister: 'Register Shelter', instructionBoard: 'Notice Board', login: 'Log in', logout: 'Log out', language: 'Language', shelterMap: 'Shelter Map', weather: 'Weather Information', contact: 'Contact', news: 'Latest News', goodConnection: 'Connection: Good', refresh: 'Auto-refresh every 10 minutes', shelterDestination: 'Shelter', lastUpdate: 'Last updated', targetArea: 'Area', lastCheck: 'Last checked', jmaLastReport: 'JMA latest report', noWarnings: 'No warnings or advisories are currently issued', weatherError: 'Failed to retrieve weather information', noNews: 'No latest news', contactOrg: 'Aomori City Disaster Response Headquarters', contactPhone: 'Phone', contactAddress: 'Address', emailForm: 'Email form' },
-      zh: { appName: '防灾应用', home: '首页', shelterSearch: '避难所搜索', shelterRegister: '登记避难所', instructionBoard: '指示与公告板', login: '登录', logout: '退出登录', language: '语言选择', shelterMap: '避难所地图', weather: '气象信息', contact: '联系我们', news: '最新消息', goodConnection: '通信状态：良好', refresh: '每10分钟自动更新', shelterDestination: '避难处', lastUpdate: '最后更新', targetArea: '目标地区', lastCheck: '最后确认', jmaLastReport: '气象厅最后发布', noWarnings: '目前没有发布警报或注意报', weatherError: '气象信息获取失败', noNews: '没有最新消息', contactOrg: '青森市灾害对策总部', contactPhone: '电话', contactAddress: '地址', emailForm: '邮件发送表单' }
+      ja: { appName: '防災アプリ', home: 'ホーム', shelterSearch: '避難所検索', shelterRegister: '避難所登録', instructionBoard: '指示・発信ボード', login: 'ログイン', logout: 'ログアウト', language: '言語選択', displayControls: '表示・操作', readAloud: '文字読み上げ', reloadConnection: '通信状態を更新', shelterInfo: '避難所情報', shelterMap: '避難所マップ', weather: '気象情報', contact: 'お問い合わせ', news: '新着情報', goodConnection: '通信状態: 良好', refresh: '10分おき自動更新', shelterDestination: '避難先', lastUpdate: '最終更新', targetArea: '対象地域', lastCheck: '最終確認', jmaLastReport: '気象庁最終発表', noWarnings: '現在、警報・注意報は発表されていません', weatherError: '気象情報の取得に失敗しました', noNews: '新着情報はありません', contactOrg: '青森市災害対策本部', contactPhone: '電話', contactAddress: '住所', emailForm: 'メール送信フォーム' },
+      en: { appName: 'Disaster Preparedness', home: 'Home', shelterSearch: 'Find Shelters', shelterRegister: 'Register Shelter', instructionBoard: 'Notice Board', login: 'Log in', logout: 'Log out', language: 'Language', displayControls: 'Display & controls', readAloud: 'Read aloud', reloadConnection: 'Refresh connection', shelterInfo: 'Shelter information', shelterMap: 'Shelter Map', weather: 'Weather Information', contact: 'Contact', news: 'Latest News', goodConnection: 'Connection: Good', refresh: 'Auto-refresh every 10 minutes', shelterDestination: 'Shelter', lastUpdate: 'Last updated', targetArea: 'Area', lastCheck: 'Last checked', jmaLastReport: 'JMA latest report', noWarnings: 'No warnings or advisories are currently issued', weatherError: 'Failed to retrieve weather information', noNews: 'No latest news', contactOrg: 'Aomori City Disaster Response Headquarters', contactPhone: 'Phone', contactAddress: 'Address', emailForm: 'Email form' },
+      zh: { appName: '防灾应用', home: '首页', shelterSearch: '避难所搜索', shelterRegister: '登记避难所', instructionBoard: '指示与公告板', login: '登录', logout: '退出登录', language: '语言选择', displayControls: '显示与操作', readAloud: '朗读文字', reloadConnection: '刷新通信状态', shelterInfo: '避难所信息', shelterMap: '避难所地图', weather: '气象信息', contact: '联系我们', news: '最新消息', goodConnection: '通信状态：良好', refresh: '每10分钟自动更新', shelterDestination: '避难处', lastUpdate: '最后更新', targetArea: '目标地区', lastCheck: '最后确认', jmaLastReport: '气象厅最后发布', noWarnings: '目前没有发布警报或注意报', weatherError: '气象信息获取失败', noNews: '没有最新消息', contactOrg: '青森市灾害对策总部', contactPhone: '电话', contactAddress: '地址', emailForm: '邮件发送表单' }
     };
+    const pageTextTranslations = {
+      '避難所検索結果': ['Shelter Search Results', '避难所搜索结果'],
+      '避難所情報': ['Shelter information', '避难所信息'],
+      '登録されている避難所を条件から検索できます。': ['Search registered shelters by criteria.', '可按条件搜索已登记的避难所。'],
+      '避難所名': ['Shelter name', '避难所名称'],
+      '地区': ['District', '地区'],
+      'エリア': ['Area', '区域'],
+      '設備': ['Facilities', '设施'],
+      '検索': ['Search', '搜索'],
+      'クリア': ['Clear', '清除'],
+      '全施設一覧を表示': ['Show all shelters', '显示所有避难所'],
+      '避難所登録': ['Register shelter', '登记避难所'],
+      '登録済みの避難所情報を確認・追加できます。': ['Review or add registered shelter information.', '可以查看或添加已登记的避难所信息。'],
+      '新しい避難所情報を登録します。避難所名を入力してください。': ['Register a new shelter. Enter the shelter name.', '登记新的避难所。请输入避难所名称。'],
+      '避難所名（必須）': ['Shelter name (required)', '避难所名称（必填）'],
+      '避難所住所（必須）': ['Shelter address (required)', '避难所地址（必填）'],
+      '被害状況': ['Damage status', '受灾情况'],
+      '混雑状況': ['Crowding status', '拥挤情况'],
+      '避難所画像（任意）': ['Shelter image (optional)', '避难所图片（可选）'],
+      '登録': ['Register', '登记'],
+      '避難所検索へ': ['Go to shelter search', '前往避难所搜索'],
+      '管理者ログイン': ['Administrator login', '管理员登录'],
+      '指示ボード・避難所登録の利用には管理者権限が必要です。': ['Administrator access is required for the notice board and shelter registration.', '使用公告板和避难所登记需要管理员权限。'],
+      'パスワード（「123」と入力してください）': ['Password (enter "123")', '密码（请输入“123”）'],
+      '指示・発信ボード': ['Notice board', '指示与公告板'],
+      '📢新規発信': ['📢 New notice', '📢 新公告'],
+      'プレビュー確認する': ['Preview', '确认预览'],
+      '上記の内容で一斉送信する': ['Send to all with the above content', '按以上内容群发'],
+      '発信内容のプレビュー': ['Notice preview', '公告预览'],
+      '閉じる': ['Close', '关闭'],
+      'アップロード': ['Upload', '上传'],
+      '問い合わせを検索': ['Search inquiries', '搜索咨询'],
+      'お問い合わせ': ['Contact', '联系我们'],
+      '災害発生時の状況を青森市災害対策本部へ送信できます。': ['Send disaster information to the Aomori City Disaster Response Headquarters.', '可以向青森市灾害对策总部发送灾害信息。'],
+      'どのような危険があったのか': ['What danger occurred?', '发生了什么危险？'],
+      '発生場所': ['Location', '发生地点'],
+      '発生日時・状況': ['Date, time, and situation', '发生日期、时间和情况'],
+      '送信': ['Send', '发送'],
+      'ホームへ戻る': ['Back to home', '返回首页'],
+      '現在地からの最適な避難所を表示ルート案内マップ': ['Route guidance map showing the best shelters from your location', '显示从当前位置前往最佳避难所的路线地图'],
+      '検索画面に戻る': ['Back to search', '返回搜索页面'],
+      'トップページへ戻る': ['Back to top page', '返回首页'],
+      '該当する避難所が見つかりませんでした（検索条件を満たす避難所がありません。）': ['No matching shelters were found.', '未找到符合条件的避难所。']
+    };
+
+    function translatePageText(language) {
+      const selected = translations[language] ? language : 'ja';
+      const replacement = function(text) {
+        const normalized = text.trim();
+        if (!normalized) return null;
+        for (const [source, values] of Object.entries(pageTextTranslations)) {
+          const translated = selected === 'ja' ? source : values[selected === 'en' ? 0 : 1];
+          if (normalized === source || normalized === pageTextTranslations[source][0] || normalized === pageTextTranslations[source][1]) {
+            return text.replace(normalized, translated);
+          }
+        }
+        return null;
+      };
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const textNodes = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode);
+      textNodes.forEach(function(node) {
+        if (node.parentElement.closest('script, style, textarea, option, [data-i18n]')) return;
+        const translated = replacement(node.nodeValue);
+        if (translated) node.nodeValue = translated;
+      });
+      document.querySelectorAll('input[placeholder], textarea[placeholder], [aria-label]').forEach(function(element) {
+        ['placeholder', 'aria-label'].forEach(function(attribute) {
+          const value = element.getAttribute(attribute);
+          const translated = value && replacement(value);
+          if (translated) element.setAttribute(attribute, translated);
+        });
+      });
+    }
     function applyLanguage(language) {
       const selected = translations[language] ? language : 'ja';
       document.documentElement.lang = selected;
@@ -583,6 +657,7 @@
         const key = element.dataset.i18n;
         if (translations[selected][key]) element.textContent = translations[selected][key];
       });
+      translatePageText(selected);
       if (languageSelect) languageSelect.value = selected;
       localStorage.setItem('bousai-language', selected);
       window.dispatchEvent(new CustomEvent('languagechanged', { detail: selected }));

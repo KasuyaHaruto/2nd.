@@ -262,6 +262,31 @@
     font-weight: 800;
   }
 
+  .history-item-content {
+    display: inline;
+  }
+
+  .history-actions {
+    display: inline-flex;
+    gap: 8px;
+    margin-left: 10px;
+  }
+
+  .history-action {
+    border: 1px solid #bfd4ea;
+    border-radius: 6px;
+    background: #fff;
+    color: #103a5b;
+    padding: 3px 8px;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .history-action.delete {
+    border-color: #e2a4a4;
+    color: #8b2525;
+  }
+
   .history-preview {
     margin-top: 18px;
     border: 1px solid #dfe7ef;
@@ -497,6 +522,7 @@
   </div>
 
   <form id="messageForm" method="post" action="/board" enctype="multipart/form-data" aria-label="発信フォーム">
+    <input id="editInstructionId" type="hidden" name="edit_id" value="">
     <section class="board-form">
       <div class="field-row">
         <div class="field-label">[送信先]</div>
@@ -529,7 +555,7 @@
 
       <div class="field-row">
         <div class="message-inline">
-          <div class="field-label">[メッセージ内容]</div>
+          <div id="messageLabel" class="field-label">[メッセージ内容]</div>
           <input class="message-input" type="text" name="message" placeholder="(自由入力)" aria-label="メッセージ内容">
           <div class="field-label" style="min-width: auto;">[画像添付]</div>
           <input id="imageUpload" name="image" type="file" accept="image/*" hidden>
@@ -541,7 +567,7 @@
 
     <div class="action-row">
       <button id="messagePreviewTrigger" class="primary-btn" type="button">プレビュー確認する</button>
-      <button class="primary-btn" type="submit">上記の内容で一斉送信する</button>
+      <button id="submitMessageButton" class="primary-btn" type="submit">上記の内容で一斉送信する</button>
     </div>
   </form>
 
@@ -572,11 +598,12 @@
       {% for item in instructions[:3] %}
         <li
           class="history-item"
+          data-instruction-id="{{ item.id or '' }}"
           data-history-item="{{ item.content }} {{ item.target }} {{ item.status }} {{ item.created_at }}"
           data-history-text="{{ item.content }}"
           data-image-url="{{ item.image_url or '' }}"
           data-history-meta="{{ item.status }} / 対象:{{ item.target }} / {{ item.created_at }}"
-        >{{ item.created_at }} <strong>{{ item.status }}</strong> {{ item.content }} (対象:{{ item.target }})</li>
+        ><span class="history-item-content">{{ item.created_at }} <strong>{{ item.status }}</strong> {{ item.content }} (対象:{{ item.target }})</span>{% if item.id %}<span class="history-actions"><button class="history-action" type="button" data-edit-instruction="{{ item.id }}">編集</button><form method="post" action="{{ url_for('delete_instruction', instruction_id=item.id) }}" onsubmit="return confirm('この発信履歴を削除しますか？');"><button class="history-action delete" type="submit">削除</button></form></span>{% endif %}</li>
       {% else %}
         <li class="history-item" data-history-item="" data-history-text="" data-image-url="" data-history-meta="">登録された発信履歴はありません。</li>
       {% endfor %}
@@ -636,8 +663,31 @@
   const messagePreviewImage = document.getElementById('messagePreviewImage');
   const messagePreviewNoImage = document.getElementById('messagePreviewNoImage');
   const messageForm = document.getElementById('messageForm');
+  const editInstructionId = document.getElementById('editInstructionId');
+  const messageLabel = document.getElementById('messageLabel');
+  const submitMessageButton = document.getElementById('submitMessageButton');
   const newMessageButton = document.getElementById('newMessageButton');
   const allHistory = {{ all_history|tojson }};
+
+  function setEditMode(item) {
+    if (!item || !editInstructionId || !messageForm) return;
+    editInstructionId.value = item.id || '';
+    const targetLabels = { 全住民: '全住民', 北部: '北部のみ', 南側: '南部のみ', 庁内: '庁内・消防団' };
+    const targetLabel = targetLabels[item.target] || item.target;
+    document.querySelectorAll('input[name="targets"]').forEach((input) => {
+      input.checked = input.value === targetLabel;
+    });
+    document.querySelectorAll('input[name="channels"]').forEach((input) => {
+      input.checked = Array.isArray(item.channels) && item.channels.includes(input.value);
+    });
+    document.querySelectorAll('input[name="urgency"]').forEach((input) => {
+      input.checked = input.value === item.urgency;
+    });
+    document.querySelector('[name="message"]').value = item.content || '';
+    if (messageLabel) messageLabel.textContent = '[発信内容を編集]';
+    if (submitMessageButton) submitMessageButton.textContent = '発信履歴を更新する';
+    messageForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   if (newMessageButton && messageForm) {
     newMessageButton.addEventListener('click', () => {
@@ -767,15 +817,48 @@
     items.forEach((item) => {
       const li = document.createElement('li');
       li.className = 'history-item';
+      li.dataset.instructionId = item.id || '';
       li.dataset.historyItem = `${item.content || ''} ${item.target || ''} ${item.status || ''} ${item.created_at || ''}`;
       li.dataset.historyText = item.content || '';
       li.dataset.imageUrl = item.image_url || '';
       li.dataset.historyMeta = `${item.status || ''} / 対象:${item.target || ''} / ${item.created_at || ''}`;
-      li.textContent = `${item.created_at || ''} ${item.status || ''} ${item.content || ''} (対象:${item.target || ''})`;
+      const content = document.createElement('span');
+      content.className = 'history-item-content';
+      content.textContent = `${item.created_at || ''} ${item.status || ''} ${item.content || ''} (対象:${item.target || ''})`;
+      li.appendChild(content);
+      if (item.id) {
+        const actions = document.createElement('span');
+        actions.className = 'history-actions';
+        const editButton = document.createElement('button');
+        editButton.className = 'history-action';
+        editButton.type = 'button';
+        editButton.textContent = '編集';
+        editButton.dataset.editInstruction = item.id;
+        actions.appendChild(editButton);
+        const deleteForm = document.createElement('form');
+        deleteForm.method = 'post';
+        deleteForm.action = `/board/${item.id}/delete`;
+        deleteForm.onsubmit = () => confirm('この発信履歴を削除しますか？');
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'history-action delete';
+        deleteButton.type = 'submit';
+        deleteButton.textContent = '削除';
+        deleteForm.appendChild(deleteButton);
+        actions.appendChild(deleteForm);
+        li.appendChild(actions);
+      }
       historyList.appendChild(li);
     });
     bindHistoryPreview();
   }
+
+  document.addEventListener('click', (event) => {
+    const editButton = event.target.closest('[data-edit-instruction]');
+    if (!editButton) return;
+    event.stopPropagation();
+    const item = allHistory.find((historyItem) => String(historyItem.id) === editButton.dataset.editInstruction);
+    setEditMode(item);
+  });
 
   if (historySearchInput && historyItems.length) {
     historySearchInput.addEventListener('input', function () {

@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urlencode
 from functools import wraps
 from werkzeug.utils import secure_filename
 import json
@@ -172,6 +172,19 @@ def shelter_form_values():
         'damages': request.form.getlist('damages'),
         'congestion': request.form.get('congestion', ''),
     }
+
+
+def remove_shelter_image(image_url):
+    """アプリが管理する避難所画像だけを削除する"""
+    if not isinstance(image_url, str) or not image_url.startswith('/static/uploads/'):
+        return
+    filename = os.path.basename(image_url)
+    image_path = os.path.join(UPLOAD_FOLDER, filename)
+    try:
+        if os.path.isfile(image_path):
+            os.remove(image_path)
+    except OSError:
+        pass
 # ────────────────────────────────
 
 # ────────────────────────────────
@@ -257,6 +270,35 @@ def _shelter_status(shelter):
 
 def _valid_coordinate(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def geocode_address(address):
+    """住所を番地単位の座標へ変換する。外部サービス障害時はNoneを返す。"""
+    if not isinstance(address, str) or not address.strip():
+        return None
+
+    query = urlencode({
+        'q': address.strip(),
+        'format': 'jsonv2',
+        'limit': 1,
+        'countrycodes': 'jp',
+        'addressdetails': 1,
+    })
+    request = urllib.request.Request(
+        f'https://nominatim.openstreetmap.org/search?{query}',
+        headers={'User-Agent': 'bousai-app/1.0'},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=3) as response:
+            places = json.loads(response.read().decode('utf-8'))
+        place = places[0] if places else None
+        latitude = float(place['lat']) if place and place.get('lat') else None
+        longitude = float(place['lon']) if place and place.get('lon') else None
+        if latitude is None or longitude is None:
+            return None
+        return latitude, longitude
+    except (OSError, ValueError, KeyError, IndexError, TypeError, json.JSONDecodeError):
+        return None
 
 
 def _distance_km(origin, destination):
@@ -590,6 +632,7 @@ def shelter_register():
 
         new_id = max((int(s.get('id', 0)) for s in shelters), default=0) + 1
         now = datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z')
+        coordinates = geocode_address(form_values['address'])
         new_shelter = {
             'id': new_id,
             'name': form_values['name'],
@@ -602,6 +645,8 @@ def shelter_register():
             'created_at': now,
             'updated_at': now,
         }
+        if coordinates:
+            new_shelter['latitude'], new_shelter['longitude'] = coordinates
         shelters.append(new_shelter)
 
         try:
@@ -634,6 +679,101 @@ def shelter_register():
         form_values=form_values,
     )
 
+
+@app.route('/shelter/<int:shelter_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_shelter(shelter_id):
+    shelter = next((item for item in shelters if item.get('id') == shelter_id), None)
+    if shelter is None:
+        return '避難所が見つかりません。', 404
+
+    form_values = {
+        'name': shelter.get('name', ''),
+        'address': shelter.get('address', ''),
+        'facilities': shelter.get('facilities', []) if isinstance(shelter.get('facilities'), list) else [],
+        'damages': shelter.get('damages', []) if isinstance(shelter.get('damages'), list) else [],
+        'congestion': shelter.get('congestion', ''),
+    }
+    errors = []
+    if request.method == 'POST':
+        form_values = shelter_form_values()
+        form_values['name'] = form_values['name'].strip()
+        form_values['address'] = form_values['address'].strip()
+        if not form_values['name']:
+            errors.append('避難所名を入力してください。')
+        if not form_values['address']:
+            errors.append('避難所住所を入力してください。')
+        if form_values['congestion'] not in ('空いている', '通常', '混雑', '満員'):
+            errors.append('混雑状況を選択してください。')
+
+        image_url, image_path = save_shelter_image(request.files.get('image'))
+        if image_url is None:
+            errors.append(image_path)
+        if errors:
+            return render_template('shelter_register.html', message='入力内容を確認してください。',
+                                   success=False, error=True, errors=errors,
+                                   form_values=form_values, edit_shelter=shelter)
+
+        old_address = shelter.get('address', '')
+        old_image = shelter.get('image', '')
+        updated = dict(shelter)
+        updated.update({
+            'name': form_values['name'],
+            'address': form_values['address'],
+            'facilities': form_values['facilities'],
+            'damages': form_values['damages'],
+            'congestion': form_values['congestion'],
+            'status': 'full' if form_values['congestion'] == '満員' else 'available',
+            'updated_at': datetime.now(JST).strftime('%Y-%m-%dT%H:%M:%S%z'),
+        })
+        if image_url:
+            updated['image'] = image_url
+        if form_values['address'] != old_address:
+            coordinates = geocode_address(form_values['address'])
+            updated.pop('latitude', None)
+            updated.pop('longitude', None)
+            if coordinates:
+                updated['latitude'], updated['longitude'] = coordinates
+
+        shelter_index = shelters.index(shelter)
+        shelters[shelter_index] = updated
+        try:
+            with open(DATA_FILE, 'w', encoding='utf-8') as file:
+                json.dump(shelters, file, ensure_ascii=False, indent=2)
+        except Exception:
+            shelters[shelter_index] = shelter
+            if image_path:
+                remove_shelter_image(image_url)
+            return render_template('shelter_register.html', message='避難所情報の保存に失敗しました。',
+                                   success=False, error=True,
+                                   errors=['データ保存に失敗しました。時間をおいて再試行してください。'],
+                                   form_values=form_values, edit_shelter=shelter), 500
+        if image_url and old_image != image_url:
+            remove_shelter_image(old_image)
+        return redirect(url_for('edit_shelter', shelter_id=shelter_id, updated='1'))
+
+    return render_template('shelter_register.html', message='避難所情報を更新しました。' if request.args.get('updated') == '1' else '',
+                           success=request.args.get('updated') == '1', error=False, errors=errors,
+                           form_values=form_values, edit_shelter=shelter)
+
+
+@app.route('/shelter/<int:shelter_id>/delete', methods=['POST'])
+@login_required
+def delete_shelter(shelter_id):
+    shelter_index = next((index for index, item in enumerate(shelters)
+                          if item.get('id') == shelter_id), None)
+    if shelter_index is None:
+        return '避難所が見つかりません。', 404
+    deleted = shelters.pop(shelter_index)
+    try:
+        with open(DATA_FILE, 'w', encoding='utf-8') as file:
+            json.dump(shelters, file, ensure_ascii=False, indent=2)
+    except Exception:
+        shelters.insert(shelter_index, deleted)
+        return '避難所情報の削除に失敗しました。', 500
+    remove_shelter_image(deleted.get('image', ''))
+    return redirect(url_for('all_shelters', deleted='1'))
+
 # 避難所検索ページ
 @app.route('/shelter_search')
 def shelter_search():
@@ -653,7 +793,7 @@ def all_shelters():
 @app.route('/board', methods=['GET', 'POST'])
 @login_required
 def board():
-    success_message = None
+    success_message = '発信履歴を削除しました。' if request.args.get('deleted') == '1' else None
 
     if request.method == 'POST':
         targets = request.form.getlist('targets') or [request.form.get('targets', '全住民')]
@@ -679,22 +819,41 @@ def board():
                 '警戒・準備': '🟡警戒・準備',
                 'お知らせ': '🔵お知らせ'
             }
-            new_id = max((int(i.get('id', 0)) for i in instructions), default=0) + 1
             now = datetime.now(JST).strftime('%Y/%m/%d %H:%M')
-            instructions.insert(0, {
-                'id': new_id,
-                'target': target_value,
-                'content': message,
-                'shelter': '',
-                'status': urgency_map.get(urgency, urgency),
-                'created_at': now,
-                'updated_at': now,
-                'channels': channels,
-                'urgency': urgency,
-                'image_url': image_url,
-            })
+            edit_id = request.form.get('edit_id', '').strip()
+            target_instruction = next(
+                (item for item in instructions if str(item.get('id')) == edit_id), None
+            ) if edit_id else None
+            if target_instruction:
+                old_image_url = target_instruction.get('image_url', '')
+                target_instruction.update({
+                    'target': target_value,
+                    'content': message,
+                    'status': urgency_map.get(urgency, urgency),
+                    'updated_at': now,
+                    'channels': channels,
+                    'urgency': urgency,
+                })
+                if image_url:
+                    target_instruction['image_url'] = image_url
+                    remove_shelter_image(old_image_url)
+                success_message = '発信履歴を更新しました。'
+            else:
+                new_id = max((int(i.get('id', 0)) for i in instructions), default=0) + 1
+                instructions.insert(0, {
+                    'id': new_id,
+                    'target': target_value,
+                    'content': message,
+                    'shelter': '',
+                    'status': urgency_map.get(urgency, urgency),
+                    'created_at': now,
+                    'updated_at': now,
+                    'channels': channels,
+                    'urgency': urgency,
+                    'image_url': image_url,
+                })
+                success_message = '発信が登録されました。'
             save_instructions()
-            success_message = '発信が登録されました。'
 
     default_history = [
         {
@@ -744,6 +903,19 @@ def board():
         has_next=current_page < total_pages,
     )
 
+
+@app.route('/board/<int:instruction_id>/delete', methods=['POST'])
+@login_required
+def delete_instruction(instruction_id):
+    instruction_index = next((index for index, item in enumerate(instructions)
+                              if item.get('id') == instruction_id), None)
+    if instruction_index is None:
+        return '発信履歴が見つかりません。', 404
+    deleted = instructions.pop(instruction_index)
+    save_instructions()
+    remove_shelter_image(deleted.get('image_url', ''))
+    return redirect(url_for('board', deleted='1'))
+
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
 def search_results():
@@ -762,6 +934,7 @@ def render_search_results(results, search_query):
         'search_results.html',
         results=prepared_results,
         search_query=search_query,
+        message='避難所を削除しました。' if request.args.get('deleted') == '1' else '',
         map_data=prepared_results,
         current_location={'latitude': DEFAULT_LOCATION[0], 'longitude': DEFAULT_LOCATION[1]},
     )
